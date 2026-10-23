@@ -4,6 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>像素辦公室 Mini Gather</title>
+<script>
+(function(){
+ try{var f=document.createElement('div');f.style.cssText='display:flex;flex-direction:column;row-gap:1px';f.appendChild(document.createElement('i'));f.appendChild(document.createElement('i'));document.documentElement.appendChild(f);var ok=f.scrollHeight===1;f.parentNode.removeChild(f);if(!ok)document.documentElement.className+=' nogap'}catch(e){}
+ if(window.MediaQueryList&&!MediaQueryList.prototype.addEventListener&&MediaQueryList.prototype.addListener)MediaQueryList.prototype.addEventListener=function(t,fn){this.addListener(fn)};
+ if(!window.PointerEvent){
+  var st={};
+  var mk=function(t,tc,tg){var ev=document.createEvent('Event');ev.initEvent(t,true,true);ev.clientX=tc.clientX;ev.clientY=tc.clientY;ev.pageX=tc.pageX;ev.pageY=tc.pageY;ev.pointerId=tc.identifier+1;ev.pointerType='touch';ev.isPrimary=true;ev.button=0;ev.buttons=1;tg.dispatchEvent(ev);return ev};
+  var go=function(type,e,useStart){for(var i=0;i<e.changedTouches.length;i++){var tc=e.changedTouches[i],tg=useStart?st[tc.identifier]:e.target;if(!tg)continue;var ev=mk(type,tc,tg);if(ev.defaultPrevented&&e.cancelable)e.preventDefault()}};
+  var opt={passive:false,capture:true};
+  document.addEventListener('touchstart',function(e){for(var i=0;i<e.changedTouches.length;i++)st[e.changedTouches[i].identifier]=e.target;go('pointerdown',e,false)},opt);
+  document.addEventListener('touchmove',function(e){
+   var t=e.target;if(e.cancelable&&((document.body.classList.contains('edit')&&t.id==='cv')||(t.tagName==='CANVAS'&&t.closest&&t.closest('#mbox'))))e.preventDefault();
+   go('pointermove',e,true)},opt);
+  ['touchend','touchcancel'].forEach(function(n){document.addEventListener(n,function(e){go(n==='touchend'?'pointerup':'pointercancel',e,true);for(var i=0;i<e.changedTouches.length;i++)delete st[e.changedTouches[i].identifier]},opt)});
+  Element.prototype.setPointerCapture=Element.prototype.releasePointerCapture=function(){};
+ }
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
@@ -16,7 +34,7 @@ button:hover{border-color:var(--acc)}
 button.on{background:var(--pri);border-color:var(--acc)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 input{background:#120f20;border:2px solid var(--line);padding:6px 8px;border-radius:0}
-#join{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:9}
+#join{position:fixed;top:0;right:0;bottom:0;left:0;display:grid;place-items:center;background:var(--bg);z-index:9}
 #join form{background:var(--panel);border:3px solid var(--line);padding:28px;width:min(92vw,360px);display:grid;gap:12px;box-shadow:6px 6px 0 #000}
 #join h1{margin:0;font-size:24px;color:var(--acc)}
 #join p{margin:0;color:var(--dim)}
@@ -42,7 +60,7 @@ canvas{display:block;width:100%;max-width:1280px;image-rendering:pixelated;borde
 #tools{display:none;gap:6px;flex-wrap:wrap}
 #tools.show{display:flex}
 .hint{color:var(--dim);font-size:12px}
-#modal{position:fixed;inset:0;background:#000a;display:grid;place-items:center;z-index:8}
+#modal{position:fixed;top:0;right:0;bottom:0;left:0;background:#000a;display:grid;place-items:center;z-index:8}
 #modal[hidden]{display:none}
 #mbox{background:var(--panel);border:3px solid var(--line);padding:16px;width:min(92vw,460px);display:grid;gap:10px;box-shadow:6px 6px 0 #000}
 #mbox pre{white-space:pre-wrap;word-break:break-all;margin:0;font:inherit;max-height:50vh;overflow:auto}
@@ -91,13 +109,13 @@ body.edit #fbar .fedit{display:flex}
 #mapTools{flex:1 1 100%}
 #mapTools .mt{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
 body.edit #cv{touch-action:pan-x pan-y}
-#mbox{max-height:92vh;max-height:92dvh;overflow:auto}
-#join form{max-height:92dvh}
+#mbox{max-height:92vh;max-height:92vh;max-height:92dvh;overflow:auto}
+#join form{max-height:92vh;max-height:92dvh}
 @media (max-width:820px),(pointer:coarse){
  #pad,#pact{display:grid}
  #app{padding:8px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));padding-bottom:max(8px,env(safe-area-inset-bottom));gap:8px}
  #stage{flex:1 1 100%}
- #vp{max-height:68vh;max-height:68dvh}
+ #vp{max-height:68vh;max-height:68vh;max-height:68dvh}
  #side{flex:1 1 100%;max-width:none}
  #vids{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
  #log{height:140px}
@@ -109,13 +127,72 @@ body.edit #cv{touch-action:pan-x pan-y}
  #bar>button,#soc>button{flex:1 1 auto}
  #status{flex:1 1 100%;margin-left:0}
 }
+/* ---- v4: responsive join + mobile-first in-game ---- */
+:root{--dock:58px}
+#join{place-items:start center;overflow:auto;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}
+#join form{width:min(100%,640px);margin:auto;max-height:none;overflow:visible;padding:22px}
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.skins button{width:auto;height:64px}.skins canvas{width:100%;height:100%;object-fit:contain}
+.row{flex-wrap:wrap}.row label{min-width:130px}
+#dock,#moreSheet{display:none}#moreSheet{display:contents}
+@media (min-width:1000px){#join form{width:min(100%,760px)}.skins{grid-template-columns:repeat(8,1fr)}}
+@media (max-width:600px){
+ #join{padding:0}#join form{width:100%;min-height:100vh;min-height:100dvh;border:0;box-shadow:none;padding:14px 14px 0;gap:10px}
+ .skins{grid-template-columns:repeat(4,1fr)}.skins button{height:78px}
+ #join label,#join summary{font-size:15px}#join input,#join select{min-height:44px}
+ #go{position:-webkit-sticky;position:sticky;bottom:0;z-index:2;min-height:52px;margin:0 -14px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-width:2px 0 0}
+}
+@media (max-width:820px),(pointer:coarse){
+ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+ body{-webkit-tap-highlight-color:transparent}
+ #app{display:block;padding:0}
+ #stage{position:fixed;top:0;left:0;right:0;bottom:calc(var(--dock) + env(safe-area-inset-bottom));display:flex;flex-direction:column;background:#000}
+ #vpw{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+ #vp{flex:1 1 auto;min-height:0;max-height:none;height:auto}
+ canvas#cv{border:0}
+ #fbar{margin:0;padding:4px 6px;flex:0 0 auto;flex-wrap:nowrap;overflow-x:auto;background:var(--panel);border-bottom:2px solid var(--line)}
+ #fbtns{flex-wrap:nowrap}#fbtns button{white-space:nowrap}
+ #screens{margin:0;max-height:28vh;max-height:28dvh;overflow:auto}
+ body>.hint,#stage>.hint{display:none}
+ #pad{grid-template-columns:repeat(3,60px);grid-template-rows:repeat(2,60px)}#pad button{width:60px;height:60px;font-size:22px}
+ #pact{grid-template-columns:repeat(2,60px);grid-auto-rows:56px}
+ #dock{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:6;height:calc(var(--dock) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--panel);border-top:3px solid var(--line);user-select:none;-webkit-user-select:none}
+ #dock button{position:relative;border:0;border-right:2px solid var(--line);font-size:22px;min-height:var(--dock);touch-action:manipulation;background:transparent}
+ #dock button:last-child{border-right:0}#dock button.on{background:var(--pri)}#dock button.off{background:#5a2330}
+ #dock button small{display:block;font-size:10px;color:var(--dim);line-height:1}
+ #dkchat[data-n]:not([data-n="0"])::after{content:attr(data-n);position:absolute;top:4px;right:14px;background:#d02020;color:#fff;font-size:11px;min-width:18px;border-radius:9px;line-height:18px}
+ #moreSheet,#side{display:none;position:fixed;left:0;right:0;bottom:calc(var(--dock) + env(safe-area-inset-bottom));z-index:5;max-height:56vh;max-height:56dvh;overflow:auto;background:var(--panel);border-top:3px solid var(--acc);padding:10px;box-shadow:0 -6px 0 #0006}
+ body.sh-more #moreSheet{display:grid;gap:8px}
+ body.sh-chat #side,body.sh-people #side{display:grid}
+ body.sh-chat #plist,body.sh-people #log,body.sh-people #chat,body.sh-people #emo{display:none}
+ #side{pointer-events:auto}#side #vids{display:none}
+ #bar #mic,#bar #cam{display:none}
+ #bar{margin:0}#soc{margin:0}
+ #log{height:30vh;height:30dvh}
+ #emo button{min-width:44px;min-height:44px}
+ #vids{display:grid!important;position:fixed;top:calc(env(safe-area-inset-top) + 46px);right:6px;width:88px;grid-template-columns:1fr;gap:4px;min-height:0;z-index:4;pointer-events:none}
+ #side #vids{display:grid!important}
+ #vids .v{border-width:1px}
+ #tour{font-size:13px;padding:8px 10px;max-height:34vh}
+}
+@media (max-width:820px) and (max-height:480px),(pointer:coarse) and (max-height:480px){:root{--dock:46px}#dock button{font-size:18px}}
+@supports not (aspect-ratio:1/1){.v{height:100px}#vids .v{height:66px}}
+#join,#moreSheet,#side,#mbox,#vp,#log,#plist{-webkit-overflow-scrolling:touch}
+.nogap #bar>*,.nogap #bar .mt>*,.nogap #soc>*,.nogap #fbar>*,.nogap #fbtns>*,.nogap #fbar .fedit>*,.nogap #tools>*,.nogap #emo>*,.nogap #chat>*,.nogap .row>*,.nogap #plist div>*,.nogap #tbar>*{margin:0 6px 6px 0}
+#mapbtns{position:absolute;top:6px;left:6px;z-index:3;display:grid;gap:4px;justify-items:start}
+#mini{width:120px;height:78px;max-width:none;border:2px solid var(--line);background:#000;opacity:.92;cursor:pointer}
+#mapbtns .mb{display:flex}#mapbtns .mb button{width:40px;height:40px;min-height:40px;padding:0;font-size:18px;margin-right:4px;background:#201c33cc}
+body.meet #vids{display:grid!important;position:fixed;top:8px;left:8px;right:8px;bottom:8px;width:auto;grid-template-columns:repeat(2,1fr);grid-auto-rows:minmax(100px,1fr);background:#000e;padding:8px;overflow:auto;pointer-events:auto;z-index:5}
+body.meet #vids .v{width:auto;height:100%!important}
+@media (min-width:1000px){body.meet #vids{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:820px),(pointer:coarse){body.meet #vids{top:calc(env(safe-area-inset-top) + 8px);bottom:calc(var(--dock) + env(safe-area-inset-bottom) + 8px)}}
 #tour{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(94vw,560px);max-height:42vh;overflow:auto;background:var(--panel);border:3px solid var(--acc);padding:10px 12px;z-index:7;box-shadow:6px 6px 0 #000;display:grid;gap:8px}
 #tour[hidden]{display:none}
 #tname{color:var(--acc)}#ttext{white-space:pre-wrap}#tdone{color:#7dffb0;min-height:1.4em}
 #tbar{display:flex;gap:6px;align-items:center}#tprog{color:var(--dim);flex:1}
 .tourhl{outline:3px solid var(--acc)!important;outline-offset:3px;animation:tp 1s steps(2) infinite}
 @keyframes tp{50%{outline-color:#ff6ad5}}
-@media (max-height:480px) and (orientation:landscape){#vp{max-height:calc(100dvh - 24px)}}
+@media (max-height:480px) and (orientation:landscape){#vp{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}}
 </style>
 </head>
 <body>
@@ -321,7 +398,7 @@ const peers={};let peer,myId,isHost=false,stream,room,hostId;
 let objs=[],follow=null,locate=null,shareStream=null,plSig='',fileTarget=null,openBoard=null,curObj=null,modalTimer=0,lastChime=0;const shareCalls={};
 var TOUR=null;const bc=m=>{if(TOUR){const o=m.t==='ost'&&objs.find(q=>q.id===m.id);TOUR.act=o?o.type:m.t;return}if(m.fl==null)m.fl=curFl;Object.values(peers).forEach(p=>p.conn&&p.conn.open&&p.conn.send(m))};
 const status=t=>$('status').textContent=t;
-function logMsg(html){const l=$('log');l.insertAdjacentHTML('beforeend','<div>'+html+'</div>');l.scrollTop=l.scrollHeight}
+function logMsg(html){if(window.dockNote)dockNote();const l=$('log');l.insertAdjacentHTML('beforeend','<div>'+html+'</div>');l.scrollTop=l.scrollHeight}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function P(id){
  if(peers[id])return peers[id];
@@ -860,7 +937,7 @@ function openObj(o){
  mbox.textContent='';modal.hidden=false;
  if(o.type==='video'){
   const id=ytId(o.text);
-  if(id){const f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/'+id;f.allow='encrypted-media; picture-in-picture';f.allowFullscreen=true;f.referrerPolicy='no-referrer';f.style.cssText='width:100%;aspect-ratio:16/9;border:0';mbox.append(f)}
+  if(id){const f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/'+id;f.allow='encrypted-media; picture-in-picture';f.allowFullscreen=true;f.referrerPolicy='no-referrer';f.style.cssText='width:100%;border:0;'+(window.CSS&&CSS.supports&&CSS.supports('aspect-ratio','1/1')?'aspect-ratio:16/9':'height:210px');mbox.append(f)}
   mbox.append(mkBtn('關閉',closeModal));return;
  }
  if(o.type==='note'){const pre=document.createElement('pre');pre.textContent=o.text||'（空白便條）';mbox.append(pre,mkBtn('關閉',closeModal))}
@@ -876,10 +953,10 @@ function openObj(o){
   mbox.append(cn,row);openBoard=o.id;redrawBoard(o);
   let last=null;
   const pt=e=>{const r=cn.getBoundingClientRect();return[Math.round((e.clientX-r.left)/r.width*400),Math.round((e.clientY-r.top)/r.height*300)]};
-  cn.onpointerdown=e=>{last=pt(e);cn.setPointerCapture(e.pointerId)};
-  cn.onpointermove=e=>{if(!last)return;const q=pt(e),s=[last[0],last[1],q[0],q[1],col.value];last=q;
-   if(o.strokes.length<4000){o.strokes.push(s);drawSeg(s);bc({t:'oseg',id:o.id,s})}};
-  cn.onpointerup=cn.onpointercancel=()=>{last=null};
+  cn.addEventListener('pointerdown',e=>{last=pt(e);cn.setPointerCapture(e.pointerId)});
+  cn.addEventListener('pointermove',e=>{if(!last)return;const q=pt(e),s=[last[0],last[1],q[0],q[1],col.value];last=q;
+   if(o.strokes.length<4000){o.strokes.push(s);drawSeg(s);bc({t:'oseg',id:o.id,s})}});
+  ['pointerup','pointercancel'].forEach(t=>cn.addEventListener(t,()=>{last=null}));
  }
 }
 /* ---------- shared-state objects ---------- */
@@ -1778,7 +1855,8 @@ function tourGo(i){
  const T=TOUR;if(!T)return;const S=TS[i];
  if(!S){tourEnd();return}
  T.i=i;T.act=null;T.last=null;T.ck=false;T.p0=[me.x,me.y];clearHl();
- if(S.hl){const e=document.querySelector(S.hl);
+ if(window.openSheet){const SH={'#chat':'chat','#emo':'chat','#plist':'people'};openSheet(!S.hl||['#vpw','#fbar','#mic'].includes(S.hl)?null:(SH[S.hl]||'more'))}
+ if(S.hl){let e=document.querySelector(S.hl);if(e&&S.hl==='#mic'&&!e.offsetParent)e=document.getElementById('dkmic');
   if(e){if(S.hl==='#mapTools')e.open=true;e.classList.add('tourhl');e.scrollIntoView({block:'nearest'});
    if(S.ck){const f=()=>{T.ck=true};e.addEventListener('change',f,{once:true})}}}
  const n=T.npc;n.em='✨';n.emT=Date.now()+1500;
@@ -1839,6 +1917,80 @@ window.tourOffer=function(){
  p.textContent='嗨，我是小語！\n要不要讓我帶你逛一圈，一次體驗所有功能？\n（約 5 分鐘，隨時可以結束；之後也能按工具列的「🧭 導覽」重來）';
  mbox.append(p,mkBtn('開始導覽',()=>{closeModal();startTour()}),mkBtn('先不要',closeModal));
 };
+})();
+
+/* ---------- v4 mobile shell: bottom dock + sheets ---------- */
+(()=>{
+ const $$=id=>document.getElementById(id),B=document.body;
+ const more=document.createElement('div');more.id='moreSheet';
+ $$('bar').before(more);more.append($$('bar'),$$('soc'));
+ const dock=document.createElement('nav');dock.id='dock';
+ dock.innerHTML='<button type="button" id="dkmic" aria-label="麥克風">🎤</button><button type="button" id="dkcam" aria-label="鏡頭">📷</button><button type="button" id="dkchat" data-sh="chat" aria-label="聊天">💬</button><button type="button" id="dkpeople" data-sh="people" aria-label="名單">👥</button><button type="button" id="dkmore" data-sh="more" aria-label="更多">☰</button>';
+ B.append(dock);
+ let cur=null;
+ window.openSheet=n=>{
+  cur=n||null;['chat','people','more'].forEach(k=>{B.classList.toggle('sh-'+k,k===cur);const b=$$('dk'+k);if(b)b.classList.toggle('on',k===cur)});
+  if(cur==='chat')$$('dkchat').dataset.n=0;
+ };
+ dock.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>openSheet(cur===b.dataset.sh?null:b.dataset.sh));
+ $$('dkmic').onclick=()=>$$('mic').click();$$('dkcam').onclick=()=>$$('cam').click();
+ setInterval(()=>{
+  const m=/開/.test($$('mic').textContent),c=/開/.test($$('cam').textContent);
+  $$('dkmic').textContent=m?'🎤':'🔇';$$('dkmic').classList.toggle('off',!m);
+  $$('dkcam').textContent=c?'📷':'🚫';$$('dkcam').classList.toggle('off',!c);
+ },300);
+ window.dockNote=()=>{if(!B.classList.contains('sh-chat')){const b=$$('dkchat');b.dataset.n=(+b.dataset.n||0)+1}};
+ const mq=matchMedia('(max-width:820px),(pointer:coarse)'),vids=$$('vids'),side=$$('side');
+ const place=()=>{if(mq.matches)B.append(vids);else side.prepend(vids)};
+ place();mq.addEventListener&&mq.addEventListener('change',place);
+ $$('cv').addEventListener('pointerdown',()=>openSheet(null));
+ addEventListener('keydown',e=>{if(e.key==='Escape')openSheet(null)});
+ if(matchMedia('(max-width:600px)').matches){const d=document.querySelector('#join details');if(d)d.open=false}
+})();
+
+/* ---------- v5: map page tools + iOS 12 fallbacks ---------- */
+(()=>{
+ const $$=id=>document.getElementById(id);
+ const box=document.createElement('div');box.id='mapbtns';
+ box.innerHTML='<canvas id="mini" width="120" height="78" aria-label="小地圖（點一下走過去）"></canvas><div class="mb"><button type="button" id="mbmini" aria-label="小地圖">🗺</button><button type="button" id="mbhome" aria-label="回起點">🏠</button><button type="button" id="mbmeet" aria-label="視訊牆">🎦</button></div>';
+ $$('vpw').append(box);
+ const mc=$$('mini'),mx=mc.getContext('2d');
+ mx.imageSmoothingEnabled=false;
+ setInterval(()=>{
+  if(mc.style.display==='none')return;
+  for(let j=0;j<H;j++)for(let i=0;i<W;i++){mx.fillStyle=MMC[map[idx(i,j)]]||'#000';mx.fillRect(i*3,j*3,3,3)}
+  mx.fillStyle='#ff6fa8';objs.forEach(o=>mx.fillRect(o.x*3,o.y*3,3,3));
+  mx.fillStyle='#fff';
+  (TOUR?(TOUR.npc.fl===curFl?[TOUR.npc]:[]):Object.values(peers).filter(p=>p.name&&(p.fl|0)===curFl)).forEach(p=>mx.fillRect(p.x*3-1,p.y*3-1,5,5));
+  mx.fillStyle='#ffcf4a';mx.fillRect(me.x*3-2,me.y*3-2,7,7);
+ },350);
+ mc.addEventListener('pointerdown',e=>{
+  e.stopPropagation();if(editing)return;
+  const r=mc.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*W),y=Math.floor((e.clientY-r.top)/r.height*H);
+  keys.clear();follow=null;const pa=findPath(x,y);
+  if(pa&&pa.length){path=pa;dest=[x,y]}else logMsg('<i>走不到那裡</i>');
+ });
+ $$('mbmini').onclick=()=>{mc.style.display=mc.style.display==='none'?'':'none';$$('mbmini').classList.toggle('on',mc.style.display!=='none')};
+ $$('mbmini').classList.add('on');
+ $$('mbhome').onclick=()=>{
+  let sx=6,sy=6;
+  if(blocked(sx,sy)||STAIRT.has(map[idx(sx,sy)])){for(let i=0;i<W*H;i++)if(!blocked(i%W,(i/W)|0)&&!STAIRT.has(map[i])){sx=i%W;sy=(i/W)|0;break}}
+  me.x=sx;me.y=sy;path=null;dest=null;follow=null;bc({t:'mv',x:me.x,y:me.y,f:me.f,d:me.d});updateAV();logMsg('<i>已回到起點</i>');
+ };
+ const meet=on=>{document.body.classList.toggle('meet',on);$$('mbmeet').classList.toggle('on',on)};
+ $$('mbmeet').onclick=()=>meet(!document.body.classList.contains('meet'));
+ addEventListener('keydown',e=>{
+  if(e.key==='Escape')meet(false);
+  if(!$$('modal').hidden||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+  const n='123456'.indexOf(e.key);if(e.key.length===1&&n>=0)$$('emo').children[n].click();
+ });
+ document.addEventListener('touchend',()=>{try{getA()}catch(e){}});
+ const c=$$('col');
+ if(c&&c.type!=='color'){
+  const sl=document.createElement('select');sl.id='col';
+  [['#e8504f','紅'],['#e8a23a','橘'],['#f0d44a','黃'],['#4caf6a','綠'],['#3aa6d8','藍'],['#7c5cff','紫'],['#e86fa8','粉'],['#8a8a94','灰']].forEach(([v,n])=>sl.add(new Option(n,v)));
+  c.replaceWith(sl);sl.onchange=refreshSkins;
+ }
 })();
 </script>
 </body>
