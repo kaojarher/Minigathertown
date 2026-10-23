@@ -236,7 +236,7 @@ body.meet #vids .v{width:auto;height:100%!important}
   <div id="bar">
    <button id="tourBtn">🧭 導覽</button><button id="mic">麥克風 開</button><button id="cam">鏡頭 開</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
    <details id="mapTools" open><summary>地圖工具（編輯／匯出入／範本）</summary><div class="mt"><button id="ed">編輯地圖</button>
-   <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區＋3 層・示意）</option><option value="avi">✈ 航空教育展示館（2 層・示意）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
+   <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區導覽圖＋1F 依官方圖，2F/3F 示意）</option><option value="avi">✈ 航空教育展示館（2 層・示意）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
    <span id="tools"></span></div></details>
    <span id="status">連線中…</span>
   </div>
@@ -1605,39 +1605,131 @@ const MULTI={
    guideMap(15,16);
   }}
  ])},
- npms(){makeFloors([
-  {n:'園區 至美橋',f(){
-   map.fill(10);frameT(0,0,W-1,H-1,13);
-   fillT(4,7,35,17,7);fillT(19,7,20,17,14);
-   fillT(5,1,34,3,1);fillT(1,4,38,5,14);setT(19,25,14);setT(20,25,14);
-   fillT(19,18,20,24,14);fillT(2,19,12,23,14);fillT(25,19,36,23,14);
-   SP.up(19,3);SP.up(20,3);
-   [[2,8],[2,12],[2,16],[37,8],[37,12],[37,16]].forEach(([x,y])=>setT(x,y,13));
-   setT(10,5,6);setT(29,5,6);
-   addO('img',17,19,'至美橋・至善湖（示意插圖）。想換成實景照片：打開後按「貼上網址」或「上傳圖片」。使用前請確認照片授權。',null,scenePic('lake','至美橋・至善湖（示意插圖）'));
-   addO('audio',22,19,'歡迎來到故宮南院的示意場景。博物館主體隔著至善湖，唯一通往主館的橋是弧形的至美橋，造型讓人聯想到古樂器箜篌。園區的兩座湖分別叫至德湖與至善湖。從橋的另一端走上階梯，就進入博物館一樓大廳。');
-   addO('music',30,21,'',{s:0,on:false});
-   addO('note',6,21,'停車場與園區入口（示意）。這個場景不是官方平面圖。');
-   addO('note',4,20,'館方資訊：嘉義縣太保市故宮大道 888 號｜電話 05-362-0777｜據官網，展館週二至週五 09:00–17:00、週六日與國定假日 09:00–18:00，園區 05:00–24:00。休館日、票價與特展請以官方網站為準。');
-   addO('link',7,20,'https://south.npm.gov.tw/');
-   addO('link',9,20,'https://south.npm.gov.tw/Visit/Ticket.htm');
-   addO('link',11,20,'https://www.google.com/maps/search/?api=1&query=%E5%9C%8B%E7%AB%8B%E6%95%85%E5%AE%AE%E5%8D%9A%E7%89%A9%E9%99%A2%E5%8D%97%E9%83%A8%E9%99%A2%E5%8D%80');
-   addO('note',9,22,'↑ 連結說明（由左到右）：官方網站、票價資訊頁、Google 地圖導航。');
-   guideMap(17,21);
+ npms(){
+  /* ---- helpers: polygons / polylines are given in the ORIGINAL IMAGE PIXELS and converted to the 40x26 grid ---- */
+  const inP=(x,y,p)=>{let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
+  const polyT=(p,v,tr)=>{const q=p.map(a=>tr(a[0],a[1]));for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(inP(x+.5,y+.5,q))setT(x,y,v)};
+  const lineT=(p,v,tr)=>{const q=p.map(a=>tr(a[0],a[1]));for(let i=0;i<q.length-1;i++){const a=q[i],b=q[i+1],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*2)+1;for(let k=0;k<=n;k++){const x=Math.floor(a[0]+(b[0]-a[0])*k/n),y=Math.floor(a[1]+(b[1]-a[1])*k/n);setT(x,y,v);setT(x+1,y,v);setT(x,y+1,v)}}};
+  const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  const near=(x,y)=>{const bl=(a,b)=>!inb(a,b)||BLOCK.has(map[idx(a,b)])||STAIRT.has(map[idx(a,b)])||objs.some(o=>o.x===a&&o.y===b);x=Math.floor(x);y=Math.floor(y);for(let r=0;r<=5;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bl(x+dx,y+dy))return [x+dx,y+dy];return [x,y]};
+  const put=(tr,px,py,type,text,d,src)=>{const g=tr(px,py),p=near(g[0],g[1]);addO(type,p[0],p[1],text,d,src)};
+  const pk=(x,y)=>[(x-300)/25,1+(y-430)/42];   /* 園區導覽圖 → grid */
+  const fl=(x,y)=>[(x-70)/28.5,(y-555)/28.5];   /* 1F 平面圖 → grid */
+  makeFloors([
+  {n:'園區導覽圖',f(){
+   map.fill(1);
+   polyT([[300,430],[1282,430],[940,1420],[350,1420]],10,pk);                       /* 園區草地（梯形邊界） */
+   polyT([[472,1080],[480,1030],[560,1040],[640,1000],[700,960],[800,950],[850,990],[850,1100],[830,1170],[790,1230],[700,1240],[600,1235],[510,1190],[470,1120]],7,pk); /* 至善湖 */
+   polyT([[610,690],[700,650],[800,690],[900,680],[990,650],[1000,720],[970,800],[930,860],[880,900],[840,940],[700,940],[640,850],[610,790]],7,pk);                  /* 至德湖 */
+   polyT([[410,660],[470,640],[560,650],[600,680],[600,760],[500,770],[420,740]],7,pk);                                                                                    /* 西北小湖 */
+   /* 道路與橋 */
+   lineT([[372,520],[372,700],[385,900],[400,1100],[420,1250],[430,1315]],14,pk);   /* 西側環園道 */
+   lineT([[715,430],[715,560],[660,610],[630,660]],14,pk);                           /* 北大門入園道 */
+   lineT([[628,660],[640,700],[612,745],[600,800],[605,850]],14,pk);                 /* 覽月橋 */
+   lineT([[575,1225],[580,1150],[610,1110],[660,1075],[690,1040],[720,1030]],14,pk); /* 至美橋 */
+   lineT([[705,925],[790,942],[865,988]],14,pk);                                     /* 至真橋 */
+   lineT([[870,900],[874,830]],14,pk);lineT([[870,900],[865,988]],14,pk);            /* 往出眺平台 */
+   lineT([[920,1020],[1000,1005],[1040,1000],[1060,900],[1075,800],[1080,700],[1060,650],[1030,585],[900,565],[780,555],[720,560]],14,pk); /* 東側環湖步道 */
+   lineT([[1030,585],[1060,540],[1110,520],[1135,510]],14,pk);lineT([[1080,720],[1133,718]],14,pk);
+   lineT([[575,1225],[575,1315],[780,1315],[900,1315],[905,1220],[900,1100],[920,1030]],14,pk);lineT([[820,1315],[820,1425]],14,pk);lineT([[430,1315],[575,1315]],14,pk);
+   /* 落羽松步道 L */
+   polyT(rect(420,530,560,550),13,pk);polyT(rect(420,595,560,615),13,pk);lineT([[372,570],[600,570],[640,600],[630,660]],14,pk);
+   /* 停車場 */
+   polyT(rect(600,460,680,530),17,pk);polyT(rect(755,460,880,530),17,pk);polyT(rect(485,1335,700,1420),17,pk);polyT(rect(865,1335,935,1420),17,pk);polyT(rect(400,810,480,900),17,pk);
+   /* 景點 */
+   polyT(rect(850,805,895,850),15,pk);                 /* G 出眺平台 */
+   polyT(rect(850,985,920,1055),14,pk);                /* D 圓形廣場 */
+   polyT(rect(830,1060,900,1100),18,pk);               /* B 水岸舞台 */
+   polyT(rect(1000,1030,1060,1095),7,pk);              /* C 水景花園 */
+   polyT(rect(800,590,860,640),14,pk);                 /* K 慶典花園 */
+   polyT(rect(878,590,915,640),7,pk);                  /* J 人工濕地 */
+   polyT(rect(1090,680,1175,760),10,pk);               /* H 熱帶花園 */
+   polyT(rect(1090,490,1180,560),18,pk);               /* I 藝文劇場 */
+   polyT(rect(660,880,740,930),14,pk);                 /* F 透南風廣場 */
+   polyT(rect(690,980,750,1030),14,pk);                /* E 大千石庭 */
+   polyT(rect(790,1140,845,1195),10,pk);               /* A 藝術之丘 */
+   polyT([[390,1000],[480,1000],[490,1250],[430,1250]],20,pk); /* 2館（興建中） */
+   fillT(16,20,19,21,17);                              /* 遊客中心 */
+   /* 1館 */
+   polyT([[505,950],[570,870],[640,850],[700,880],[700,1000],[650,1050],[560,1030],[510,1000]],1,pk);
+   fillT(10,12,14,14,17);setT(15,14,14);setT(16,14,14);setT(15,15,14);setT(15,16,14);setT(16,16,14);
+   SP.up(10,13);SP.up(10,14);SP.el(10,12);
+   /* 出入口與零星樹木 */
+   setT(16,0,14);setT(17,0,14);setT(20,25,14);setT(21,25,14);
+   [[26,2],[28,2],[30,3],[29,8],[27,12],[27,19],[29,20],[28,22],[5,23],[9,3],[24,12]].forEach(([x,y])=>{if(map[idx(x,y)]===10)setT(x,y,13)});
+   /* 標示物件（名稱與英文取自官方導覽圖圖例） */
+   const L=[['A','藝術之丘 Art Hill',815,1168],['B','水岸舞台 Waterfront Stage',866,1080],['C','水景花園 Waterscape Garden',1030,1063],['D','圓形廣場 Round Plaza',880,1020],['E','大千石庭 Dai-chien Stone Garden',713,1003],['F','透南風廣場 Southern Breeze Plaza',669,888],['G','出眺景觀平台 Scenic Viewing Deck',874,830],['H','熱帶花園 Tropical Garden',1133,718],['I','藝文劇場 Art Theater',1135,507],['J','人工濕地 Constructed Wetland',896,612],['K','慶典花園 Festival Garden',835,612],['L','落羽松步道 Bald Cypress Pathway',455,566]];
+   L.forEach(([k,t,x,y])=>put(pk,x,y,'note','園區景點 '+k+'：'+t));
+   put(pk,760,1255,'note','遊客中心 Visitor Center（圖示另有廁所、哺乳室、AED）。');
+   put(pk,820,1380,'note','南大門 South Entrance（故宮大道）。');
+   put(pk,715,440,'note','北大門 North Entrance（故宮北路）。');
+   put(pk,605,625,'note','五分車站 Sugar Train Station。');
+   put(pk,500,832,'note','1館接駁站 Museum 1 Shuttle Bus Stop。');
+   put(pk,455,1288,'note','2館接駁站（未開放）。2館興建中。');
+   put(pk,435,1120,'note','2館（興建中）Museum 2 (Under Construction)。');
+   put(pk,790,1365,'note','公車站 Bus Stop。');
+   put(pk,640,640,'note','覽月橋 Lanyue Bridge：連接五分車站方向與 1 館。');
+   put(pk,835,962,'note','至真橋 Zhihzheng Bridge（圖上標示為 Jhihzheng Bridge）。');
+   put(pk,610,1130,'note','至美橋 Jhihmei Bridge：連接遊客中心一側與 1 館入口。');
+   put(pk,780,720,'note','至德湖 Jhihde Lake。');put(pk,660,1150,'note','至善湖 Jhihshan Lake。');
+   put(pk,640,495,'note','P3 停車場（旁有 P3 接駁站、廁所、AED、哺乳室圖示）。');
+   put(pk,815,495,'note','P4 停車場 Parking Lot 4。');
+   put(pk,590,1380,'note','P2 停車場（旁有 P2 接駁站）。');
+   put(pk,900,1380,'note','P1 停車場 Parking Lot 1。');
+   put(pk,597,1292,'note','餐廳圖示位於遊客中心西側（圖上未標店名）。');
+   put(pk,553,1040,'note','咖啡廳圖示位於 1 館南側步道旁。');
+   put(pk,590,1000,'note','1館入口：從這裡的樓梯或電梯上到 1F 大廳。');
+   put(pk,820,1318,'audio','歡迎來到故宮南院。這一層依官方「院區導覽圖」繪製：北邊是北大門與 P3、P4 停車場，中間是至德湖與至善湖，1 館在湖的西側，南邊是遊客中心、南大門與 P1、P2 停車場。從至美橋走到 1 館，就能搭樓梯進入 1F 大廳。');
+   addO('music',...near(...pk(760,1292)),'',{s:0,on:false});
+   put(pk,655,1318,'note','停車場與園區入口（依導覽圖）。館方資訊：嘉義縣太保市故宮大道 888 號｜電話 05-362-0777。開放時間與票價請以官方網站為準。');
+   put(pk,880,1318,'link','https://south.npm.gov.tw/');
+   put(pk,905,1318,'link','https://south.npm.gov.tw/Visit/Ticket.htm');
+   put(pk,930,1318,'link','https://south.npm.gov.tw/Visit/ParkIntroduction/Plan.htm');
+   put(pk,955,1318,'link','https://www.google.com/maps/search/?api=1&query=%E5%9C%8B%E7%AB%8B%E6%95%85%E5%AE%AE%E5%8D%9A%E7%89%A9%E9%99%A2%E5%8D%97%E9%83%A8%E9%99%A2%E5%8D%80');
+   put(pk,930,1290,'note','↑ 連結說明（由左到右）：官方網站、票價資訊頁、官方園區平面圖、Google 地圖導航。');
+   guideMap(20,22);
   }},
   {n:'1F 大廳',f(){
-   map.fill(17);frameT(0,0,W-1,H-1,1);
-   hallT(26,14,37,23,26,19,8);
-   SP.dn(19,24);SP.dn(20,24);SP.up(37,3);SP.el(37,5);
-   fillT(15,18,22,18,2);fillT(3,10,8,10,6);fillT(3,13,8,13,6);fillT(3,11,8,12,8);fillT(28,21,32,21,6);
-   [[1,1],[38,1],[1,24],[38,24]].forEach(([x,y])=>setT(x,y,5));
-   addO('slides',19,6,'故宮南院的建築||設計靈感來自水墨畫的濃墨、飛白與渲染三種技法||東側玻璃帷幕的虛量體象徵飛白，西側金屬圓盤的實量體象徵濃墨||兩者凌空交錯之處是博物館入口，中庭與斜坡引道象徵渲染||建築下方設有 210 顆隔震器',{i:0});
-   addO('audio',17,17,'這裡是一樓大廳。故宮南院的建築靈感來自水墨畫的濃墨、飛白與渲染。往右下方是兒童創意中心，往右上角可以搭樓梯或電梯前往樓上的展廳。');
-   addO('bell',20,17);
-   addO('link',22,16,'https://south.npm.gov.tw/');
-   addO('note',28,16,'兒童創意中心：三百多坪的明亮空間，可以摸高仿真的青花瓷複製品、試穿亞洲各國服飾、玩皮影戲，還有茶席與越南美食家家酒（依現場為準）。');
-   addO('rps',31,16);addO('dice',33,16);addO('ttt',35,16);
-   guideMap(14,16);
+   map.fill(1);
+   polyT([[900,700],[1150,680],[1155,800],[1100,930],[1000,990],[920,995]],14,fl);                      /* 戶外廣場 */
+   polyT([[975,830],[1000,760],[1060,700],[1115,680],[1110,800],[1050,870],[960,920]],10,fl);           /* D 透南風廣場綠地 */
+   polyT([[640,790],[750,760],[850,690],[905,685],[970,830],[935,985],[830,1070],[660,1110],[520,1090],[400,1150],[215,1080],[300,950],[520,960],[540,900],[620,850]],17,fl); /* 大廳 */
+   polyT(rect(700,700,780,770),17,fl);
+   polyT([[650,570],[780,565],[850,700],[760,722]],8,fl);                                                /* 麥克風圖示空間 */
+   polyT([[585,690],[640,630],[720,650],[735,730],[700,735],[600,700]],0,fl);                            /* 廁所區 */
+   polyT([[305,935],[325,805],[550,850],[510,970]],8,fl);                                                /* S101 特展 */
+   polyT(rect(415,960,490,990),15,fl);                                                                   /* S102 嘉義文史 */
+   polyT([[745,935],[860,740],[890,730],[970,830],[975,905],[935,990],[905,995]],15,fl);                 /* C 兒童創意中心 */
+   polyT([[800,1000],[860,935],[905,990],[880,1050],[830,1075]],8,fl);                                   /* B 兒童創意教室 */
+   polyT(rect(560,1000,670,1100),14,fl);                                                                 /* A 斜陽角 */
+   polyT(rect(200,1075,270,1150),17,fl);polyT([[90,1160],[260,1150],[260,1195],[90,1185]],17,fl);        /* 入口與往至美橋通道 */
+   setT(...fl(610,1050).map(Math.floor),16);
+   SP.dn(1,21);SP.dn(2,21);SP.up(22,17);SP.up(23,17);SP.el(8,16);SP.el(22,15);
+   put(fl,430,890,'note','S101 特展（粉紅色區域）：展覽內容請以官方網站為準。');
+   put(fl,452,975,'note','S102 嘉義文史。');
+   put(fl,610,1060,'note','Ⓐ 斜陽角（圖上有一把大傘的休憩空間）。');
+   put(fl,850,1000,'note','Ⓑ 兒童創意教室。');
+   put(fl,850,850,'note','Ⓒ 兒童創意中心：三百多坪的明亮空間，可以摸高仿真的青花瓷複製品、試穿亞洲各國服飾、玩皮影戲，還有茶席與越南美食家家酒（依現場為準）。');
+   put(fl,1040,810,'note','Ⓓ 透南風廣場（含親子互動遊憩區）。');
+   put(fl,730,1075,'note','往 2F 售票大廳：走上這兩格樓梯。');
+   put(fl,230,1090,'note','入口（靠至美橋一側）。往至美橋、南側停車場、公車站（故宮南院站）請走左下方通道，並搭下樓梯回到園區。');
+   put(fl,835,1090,'note','出入口（靠透南風廣場一側）。往大客車候車處、本館站、北側停車場、公車站（故宮南院北站）請由右側戶外廣場前往。');
+   put(fl,1100,720,'note','↗ 往 大客車候車處、本館站、北側停車場、公車站（故宮南院北站）。');
+   put(fl,110,1170,'note','← 往 至美橋、南側停車場、公車站（故宮南院站）。往下樓梯可回園區。');
+   put(fl,393,965,'note','服務台（黃色 i 圖示）。');
+   put(fl,540,925,'note','ATM。');put(fl,572,955,'note','郵局（POST 圖示）。');
+   put(fl,620,905,'note','禮品圖示（圖上未標店名）。');put(fl,653,880,'note','書本圖示（圖上未標名稱）。');
+   put(fl,490,1025,'note','咖啡圖示（圖上未標店名）。');put(fl,550,1022,'note','咖啡圖示（圖上未標店名）。');
+   put(fl,405,1070,'note','廁所。');put(fl,408,1110,'note','無障礙廁所。');put(fl,408,1028,'note','哺乳室。');put(fl,447,1095,'note','飲水機。');
+   put(fl,822,1020,'note','AED（體外自動電擊去顫器）。');
+   put(fl,622,685,'note','廁所與無障礙廁所。');put(fl,912,718,'note','廁所。');
+   put(fl,755,635,'note','麥克風圖示空間（圖上未標名稱）。');
+   put(fl,500,1000,'audio','這裡是 1F 大廳，依官方 1F 平面圖繪製。左側粉紅色是 S101 特展與 S102 嘉義文史；中間是服務設施；右側藍色區域是兒童創意中心與兒童創意教室；右邊戶外是透南風廣場。要上 2F 售票大廳，請走往右下方的樓梯。');
+   put(fl,560,985,'bell');
+   put(fl,700,800,'slides','故宮南院的建築||設計靈感來自水墨畫的濃墨、飛白與渲染三種技法||東側玻璃帷幕的虛量體象徵飛白，西側金屬圓盤的實量體象徵濃墨||兩者凌空交錯之處是博物館入口，中庭與斜坡引道象徵渲染||建築下方設有 210 顆隔震器',{i:0});
+   put(fl,620,990,'link','https://south.npm.gov.tw/');
+   put(fl,800,800,'rps');put(fl,850,800,'dice');put(fl,900,800,'ttt');
+   guideMap(21,14);
   }},
   {n:'2F 展廳',f(){
    map.fill(17);frameT(0,0,W-1,H-1,1);
