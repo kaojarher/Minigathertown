@@ -109,6 +109,12 @@ body.edit #cv{touch-action:pan-x pan-y}
  #bar>button,#soc>button{flex:1 1 auto}
  #status{flex:1 1 100%;margin-left:0}
 }
+#tour{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(94vw,560px);max-height:42vh;overflow:auto;background:var(--panel);border:3px solid var(--acc);padding:10px 12px;z-index:7;box-shadow:6px 6px 0 #000;display:grid;gap:8px}
+#tour[hidden]{display:none}
+#tname{color:var(--acc)}#ttext{white-space:pre-wrap}#tdone{color:#7dffb0;min-height:1.4em}
+#tbar{display:flex;gap:6px;align-items:center}#tprog{color:var(--dim);flex:1}
+.tourhl{outline:3px solid var(--acc)!important;outline-offset:3px;animation:tp 1s steps(2) infinite}
+@keyframes tp{50%{outline-color:#ff6ad5}}
 @media (max-height:480px) and (orientation:landscape){#vp{max-height:calc(100dvh - 24px)}}
 </style>
 </head>
@@ -151,7 +157,7 @@ body.edit #cv{touch-action:pan-x pan-y}
   <div id="pad" aria-label="虛擬方向鍵"><button type="button" data-k="ArrowUp" aria-label="上">▲</button><button type="button" data-k="ArrowLeft" aria-label="左">◀</button><button type="button" data-k="ArrowDown" aria-label="下">▼</button><button type="button" data-k="ArrowRight" aria-label="右">▶</button></div>
   <div id="pact"><button type="button" id="zout" aria-label="縮小">－</button><button type="button" id="zin" aria-label="放大">＋</button><button type="button" id="xbtn">X 互動</button></div></div>
   <div id="bar">
-   <button id="mic">麥克風 開</button><button id="cam">鏡頭 開</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
+   <button id="tourBtn">🧭 導覽</button><button id="mic">麥克風 開</button><button id="cam">鏡頭 開</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
    <details id="mapTools" open><summary>地圖工具（編輯／匯出入／範本）</summary><div class="mt"><button id="ed">編輯地圖</button>
    <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區＋3 層・示意）</option><option value="avi">✈ 航空教育展示館（2 層・示意）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
    <span id="tools"></span></div></details>
@@ -313,7 +319,7 @@ const $=id=>document.getElementById(id);
 const me={x:6,y:6,name:'',color:'#e8504f',em:'',emT:0,chat:'',chatT:0,sk:0,f:1,url:null,img:null,lpc:false,d:2,mt:0};
 const peers={};let peer,myId,isHost=false,stream,room,hostId;
 let objs=[],follow=null,locate=null,shareStream=null,plSig='',fileTarget=null,openBoard=null,curObj=null,modalTimer=0,lastChime=0;const shareCalls={};
-const bc=m=>{if(m.fl==null)m.fl=curFl;Object.values(peers).forEach(p=>p.conn&&p.conn.open&&p.conn.send(m))};
+var TOUR=null;const bc=m=>{if(TOUR){const o=m.t==='ost'&&objs.find(q=>q.id===m.id);TOUR.act=o?o.type:m.t;return}if(m.fl==null)m.fl=curFl;Object.values(peers).forEach(p=>p.conn&&p.conn.open&&p.conn.send(m))};
 const status=t=>$('status').textContent=t;
 function logMsg(html){const l=$('log');l.insertAdjacentHTML('beforeend','<div>'+html+'</div>');l.scrollTop=l.scrollHeight}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -348,7 +354,7 @@ function updateAV(){
 }
 
 /* ---------- networking (PeerJS) ---------- */
-function hello(){return{t:'hi',name:me.name,color:me.color,x:me.x,y:me.y,sk:me.sk,f:me.f,url:me.url||null,lpc:!!me.lpc,d:me.d,av:me.av,stx:me.stx,hand:me.hand,spot:me.spot,rec:me.rec,fl:curFl}}
+function hello(){return{t:'hi',name:me.name,color:me.color,x:TOUR?TOUR.B.x:me.x,y:TOUR?TOUR.B.y:me.y,sk:me.sk,f:me.f,url:me.url||null,lpc:!!me.lpc,d:me.d,av:me.av,stx:me.stx,hand:me.hand,spot:me.spot,rec:me.rec,fl:TOUR?TOUR.B.cur:curFl}}
 function setupConn(c,outgoing){
  const p=P(c.peer);p.conn=c;
  c.on('open',()=>{
@@ -366,6 +372,7 @@ function attachCall(call){
  call.on('close',()=>{const p=peers[call.peer];if(p)p.has=false});
 }
 function onData(id,m){
+ if(TOUR&&(FLMSG.has(m.t)||/^f(loors|add|ren|del)$/.test(m.t))){TOUR.q.push([id,m]);return}
  if(FLMSG.has(m.t)&&floors[m.fl|0]&&(m.fl|0)!==curFl)return withFloor(m.fl|0,()=>onData(id,m));
  const p=P(id);
  switch(m.t){
@@ -437,7 +444,7 @@ $('jf').addEventListener('submit',async e=>{
  const v=document.createElement('video');v.autoplay=true;v.muted=true;v.playsInline=true;v.srcObject=stream;
  lv.append(v);const sp=document.createElement('span');sp.textContent=me.name+'（我）';lv.append(sp);$('vids').prepend(lv);
  $('join').remove();
- boot(true);
+ boot(true);setTimeout(()=>window.tourOffer&&tourOffer(),900);
 });
 function toggle(btn,kind,label){
  btn.onclick=()=>{
@@ -708,7 +715,7 @@ function frame(){
  }
  if(dest&&path&&path.length){ctx.strokeStyle='#ffcf4a';ctx.lineWidth=1;ctx.strokeRect(dest[0]*T+2,dest[1]*T+2,12,12)}
  objs.forEach(drawObj);
- const all=[...Object.values(peers).filter(p=>(p.fl|0)===curFl),me].sort((a,b)=>a.y-b.y);
+ const all=[...(TOUR?(TOUR.npc.fl===curFl?[TOUR.npc]:[]):Object.values(peers).filter(p=>(p.fl|0)===curFl)),me].sort((a,b)=>a.y-b.y);
  all.forEach(p=>{if(p===me||p.name)drawChar(p,p===me,ctx)});
  if(locate&&locate.until>Date.now()){const q=peers[locate.id];if(q&&(q.fl|0)===curFl){ctx.strokeStyle='#ff5a7a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q.x*T+8,q.y*T+8,8+(Date.now()/80)%8,0,7);ctx.stroke()}}
  if(floors.length>1){ctx.font='8px DotGothic16,sans-serif';ctx.textAlign='left';const ft=floorName(curFl),fw=ctx.measureText(ft).width+8;ctx.fillStyle='#000a';ctx.fillRect(2,2,fw,12);ctx.fillStyle='#ffcf4a';ctx.fillText(ft,6,11)}
@@ -847,6 +854,7 @@ function drawSeg(s){
 }
 function redrawBoard(o){const c=boardCtx();if(!c)return;c.fillStyle='#fff';c.fillRect(0,0,400,300);o.strokes.forEach(drawSeg)}
 function openObj(o){
+ if(TOUR)TOUR.last=o.type;
  if(o.type==='bell'){ring();return}
  if(UIS[o.type]){openShared(o,UIS[o.type]);return}
  mbox.textContent='';modal.hidden=false;
@@ -1013,7 +1021,7 @@ const UIS={
  },
  pick(o){
   const out=document.createElement('pre');
-  return{els:[out,mkBtn('從房內所有人抽一位',()=>{const n=[me.name,...Object.values(peers).map(p=>p.name)],r=n[rnd(n.length)];setD(o,{r});logMsg('<i>抽籤結果：'+esc(r)+'</i>')})],
+  return{els:[out,mkBtn('從房內所有人抽一位',()=>{const n=TOUR?[me.name,TOUR.npc.name]:[me.name,...Object.values(peers).map(p=>p.name)],r=n[rnd(n.length)];setD(o,{r});logMsg('<i>抽籤結果：'+esc(r)+'</i>')})],
    render(){out.textContent=o.d&&o.d.r?'🎯 '+String(o.d.r).slice(0,12):'還沒有抽過'}};
  }
 };
@@ -1175,7 +1183,7 @@ function renderList(){
 }
 function tick2(){
  objs.forEach(o=>{if(o.type==='timer'&&o.d&&+o.d.end&&!o._al&&Date.now()>=+o.d.end){o._al=true;chime([660,880,1175]);logMsg('<i>計時器時間到</i>')}});
- if(shareStream)for(const p of Object.values(peers)){
+ if(shareStream&&!TOUR)for(const p of Object.values(peers)){
   const ok=audible(me,p),c=shareCalls[p.id];
   if(ok&&!c&&p.conn&&p.conn.open){const cl=peer.call(p.id,shareStream,{metadata:{kind:'screen',name:me.name}});shareCalls[p.id]=cl;cl.on('close',()=>{delete shareCalls[p.id]})}
   else if(!ok&&c){c.close();delete shareCalls[p.id]}
@@ -1222,7 +1230,7 @@ function cleanAv(a){return a==='focus'||a==='dnd'?a:'act'}
 function cleanStx(s){return String(s||'').slice(0,20)}
 function effR(){return me.av==='focus'?Math.min(R,1):R}
 /* single source of truth: who I can see/hear (used by video, volume and recording) */
-function avOk(p){if(me.av==='dnd')return false;return audible(me,p)||(!!p.spot&&me.av!=='focus')}
+function avOk(p){if(TOUR||me.av==='dnd')return false;return audible(me,p)||(!!p.spot&&me.av!=='focus')}
 function badge(q){return(q.av==='dnd'?'⛔':q.av==='focus'?'🎯':'🟢')+(q.spot?'📣':'')+(q.hand?'✋':'')+(q.rec?'🔴':'')+' '}
 function socRefresh(){plSig='';updateAV()}
 function waveTo(id){const p=peers[id];if(!p||!p.conn||!p.conn.open)return;p.conn.send({t:'wave'});me.em='👋';me.emT=Date.now()+2000;logMsg('<i>你向 '+esc(p.name)+' 揮手</i>')}
@@ -1307,7 +1315,7 @@ function withFloor(f,fn){
  const keep=curFl;saveCur();loadInto(f);swapping=true;
  try{return fn()}finally{saveCur();loadInto(keep);swapping=false}
 }
-function packFloors(){saveCur();return floors.map(f=>({n:f.n,m:Array.from(f.m),o:f.o}))}
+function packFloors(){if(TOUR)return TOUR.B.fl.map(f=>({n:f.n,m:Array.from(f.m),o:f.o}));saveCur();return floors.map(f=>({n:f.n,m:Array.from(f.m),o:f.o}))}
 function cleanMapArr(raw){
  if(!raw||raw.length!==W*H)return null;const m=new Uint8Array(W*H);
  for(let i=0;i<W*H;i++){const v=raw[i];if(!(v>=0&&v<=MAXT))return null;m[i]=v}return m;
@@ -1357,7 +1365,7 @@ function renderFloors(){
  const bar=$('fbar'),box=$('fbtns');if(!bar)return;box.textContent='';
  bar.classList.toggle('multi',floors.length>1);
  floors.forEach((f,i)=>{
-  const n=Object.values(peers).filter(p=>p.name&&(p.fl|0)===i).length+(i===curFl?1:0);
+  const n=(TOUR?0:Object.values(peers).filter(p=>p.name&&(p.fl|0)===i).length)+(i===curFl?1:0);
   const b=mkBtn(f.n+' ('+n+')',()=>{if(i!==curFl)goFloor(i,[24,22,23])});
   b.classList.toggle('on',i===curFl);box.append(b);
  });
@@ -1683,6 +1691,154 @@ renderFloors();
   if(Math.abs(dx)>1)vp.scrollLeft+=dx*.3;else vp.scrollLeft=tx;
   if(Math.abs(dy)>1)vp.scrollTop+=dy*.3;else vp.scrollTop=ty;
  },50);
+})();
+
+/* ---------- guided tour: 小語（預設女性角色「女・長髮」）帶你體驗所有功能 ---------- */
+(()=>{
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const nearNpc=T=>T.npc.fl===curFl&&dist(me,T.npc)<=2.2;
+const TS=[
+{t:'嗨，我是小語！接下來由我帶你把每個功能都玩一遍。\n導覽會把你送到獨立的教學空間：期間看不到別人、別人也看不到你，麥克風與鏡頭會暫時關閉，結束後全部恢復。\n準備好就按「下一步」。',at:[6,22],fl:0},
+{t:'【移動】用方向鍵或 WASD 走幾步（手機用左下角方向鍵）。',at:[6,22],fl:0,hl:'#vpw',ok:T=>Math.hypot(me.x-T.p0[0],me.y-T.p0[1])>=3},
+{t:'【點地圖走路】也可以直接點地圖，角色會自動找路。請點一下地圖，走到我旁邊。',at:[10,20],fl:0,ok:nearNpc},
+{t:'【便條】走近物件會出現黃框與「按 X」（手機按右下角「X 互動」）。請站到我旁邊的便條前，按 X 打開它。',at:[8,19],fl:0,ok:T=>T.last==='note'},
+{t:'【白板】白板可以多人一起畫。按 X 打開，在畫面上拖曳畫幾筆，大家會同步看到。',at:[11,19],fl:0,ok:T=>T.act==='oseg'},
+{t:'【井字棋／五子棋】這排是小遊戲。井字棋點格子就會加入對戰（旁邊的五子棋玩法相同）。下一顆棋試試看。',at:[14,7],fl:0,ok:T=>T.act==='ttt'||T.act==='gomoku'},
+{t:'【猜拳】出拳後可以改，全部出完再按「公開結果」。請出一拳。',at:[20,7],fl:0,ok:T=>T.act==='rps'},
+{t:'【骰子】按「擲 2 顆骰子」，結果會同步給全場並記在聊天紀錄。',at:[23,7],fl:0,ok:T=>T.act==='dice'},
+{t:'【抽籤】從房內所有人隨機抽一位，適合點名。按下去看看。',at:[26,7],fl:0,ok:T=>T.act==='pick'},
+{t:'【投票】點選項投票，可以改票，百分比即時更新。',at:[12,13],fl:0,ok:T=>T.act==='poll'},
+{t:'【計時器】輸入分鐘後按「開始」，時間到會響鈴提醒全場。',at:[15,13],fl:0,ok:T=>T.act==='timer'},
+{t:'【留言簿】輸入一句話按「送出」，留言會留在物件裡給之後的人看。',at:[18,13],fl:0,ok:T=>T.act==='book'},
+{t:'【門鈴】按 X 就會響，同一層的人都會聽到「叮咚」。',at:[21,13],fl:0,ok:T=>T.act==='chime'},
+{t:'【音樂盒】選一首曲子播放，所有人同步聽到，越靠近音量越大。',at:[24,13],fl:0,ok:T=>T.act==='music'},
+{t:'【簡報】按「下一頁」翻頁，所有人會同步翻頁，很適合演講與導覽。',at:[27,13],fl:0,ok:T=>T.act==='slides'},
+{t:'【圖片】可以上傳圖片或貼網址，點圖片可以全螢幕。打開看看。',at:[30,13],fl:0,ok:T=>T.last==='img'},
+{t:'【語音導覽】可以「朗讀說明」、錄製 30 秒語音留言或上傳音檔。打開並按「朗讀說明」試試。',at:[33,13],fl:0,ok:T=>T.last==='audio'},
+{t:'【連結】打開後可以在新分頁開啟網址。（影片物件則可嵌入 YouTube，等一下的編輯模式可以自己放。）',at:[36,13],fl:0,ok:T=>T.last==='link'},
+{t:'【私人區】紫色區域是私人區：只有區內的人互相聽得見、看得見，外面的人聽不到。請走進右上角的紫色房間。',at:[33,5],fl:0,ok:()=>reg[idx(me.x,me.y)]>0},
+{t:'【傳送門】踩上發光的傳送門，會被送到下一個傳送門。請踩左邊這個。',at:[3,17],fl:0,ok:()=>Math.hypot(me.x-37,me.y-16)<=1.5},
+{t:'【樓梯】黃色 ▲ 是上樓梯。請走進它前往 2F。',at:[36,23],fl:0,ok:()=>curFl===1},
+{t:'【樓層】現在你在 2F。上方多了樓層列，可點按切換。同一層的人才互相看得到、聽得到（Spotlight 例外，全館廣播）。',at:[36,22],fl:1,hl:'#fbar'},
+{t:'【電梯】白色 E 是電梯，走進去選擇樓層。請搭電梯回 1F。',at:[36,22],fl:1,ok:()=>curFl===0},
+{t:'【文字聊天】在這裡輸入訊息按 Enter，頭上會冒出對話泡泡。送一句話吧。',at:[33,22],fl:0,hl:'#chat',ok:T=>T.act==='chat'},
+{t:'【表情】點一個表情，會飄在你頭上 3 秒。',at:[33,22],fl:0,hl:'#emo',ok:T=>T.act==='em'},
+{t:'【麥克風與鏡頭】這兩個按鈕開關你的聲音與畫面。預設是關的，進入空間後可以自己打開。5 格內才會互相看見、聽見。',at:[33,22],fl:0,hl:'#mic'},
+{t:'【分享螢幕與傳檔】分享螢幕只有 5 格內或同一私人區的人看得到；「傳送檔案」可傳給附近的人（上限 5 MB）。這兩項需要真人對象，這裡先介紹。',at:[33,22],fl:0,hl:'#shr'},
+{t:'【Spotlight】開啟後全場都看得到、聽得到你，適合演講開場。請按一下，再按一次關閉。',at:[33,22],fl:0,hl:'#spot',ok:T=>T.act==='spot'},
+{t:'【舉手】想發言時舉手，大家名單上會看到 ✋。請按一下。',at:[33,22],fl:0,hl:'#hand',ok:T=>T.act==='hand'},
+{t:'【狀態】可選「可交談／專注／勿擾」，也能寫一行狀態文字。請換一個狀態。',at:[33,22],fl:0,hl:'#avs',ok:T=>T.act==='st'},
+{t:'【互通距離】調整你能聽到、看到多遠的人（1 到 12 格）。換一個數字試試。',at:[33,22],fl:0,hl:'#rad',ck:1,ok:T=>T.ck},
+{t:'【錄影】錄下地圖畫面與你聽到的聲音，檔案只存在你的裝置，開錄時會通知全場。',at:[33,22],fl:0,hl:'#rec'},
+{t:'【名單】右側名單可以「定位」「跟隨」「揮手」「傳檔」給任何人，也能看到每個人的樓層與狀態。',at:[33,22],fl:0,hl:'#plist'},
+{t:'【編輯地圖】按「編輯地圖」進入編輯模式，所有人會同步看到修改。（導覽中的修改不會影響真實空間。）',at:[33,22],fl:0,hl:'#ed',ok:()=>editing},
+{t:'現在選一個圖塊或物件工具（如便條、影片、移除物件），點地圖放置。玩夠了再按一次「編輯地圖」離開。',at:[33,22],fl:0,hl:'#ed',ok:()=>!editing},
+{t:'【地圖工具】這裡有 15 種範本（辦公室、咖啡廳、教室、四層大樓、展覽館、博物館…）、匯出／匯入地圖與存到瀏覽器。',at:[33,22],fl:0,hl:'#mapTools'},
+{t:'導覽完成！你已經體驗了移動、互動物件、遊戲、私人區、傳送門、多樓層、聊天、音視訊、社交與地圖編輯。\n按「完成」就回到原本的空間，之後想再逛一次，點工具列的「🧭 導覽」。',at:[33,22],fl:0}
+];
+function npcPath(n,tx,ty){
+ const s=idx(n.x,n.y),g=idx(tx,ty),prev=new Int32Array(W*H).fill(-1);prev[s]=s;const q=[s];
+ for(let h=0;h<q.length&&prev[g]<0;h++){const c=q[h],x=c%W,y=(c/W)|0;
+  for(const[dx,dy]of[[0,-1],[0,1],[-1,0],[1,0]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const k=idx(nx,ny);
+   if(prev[k]>=0||blocked(nx,ny)||map[k]===3||(map[k]>=22&&map[k]<=24))continue;prev[k]=c;q.push(k)}}
+ if(prev[g]<0)return[];const o=[];for(let c=g;c!==s;c=prev[c])o.push([c%W,(c/W)|0]);return o.reverse();
+}
+function buildFloors(){
+ makeFloors([
+  {n:'導覽 1F',f(){
+   map.fill(15);frameT(0,0,W-1,H-1,1);
+   addO('note',8,18,'這是便條：可以放公告、守則或任何文字。');
+   addO('board',11,18);
+   [['ttt',14],['gomoku',17],['rps',20],['dice',23],['pick',26]].forEach(([t,x])=>addO(t,x,6));
+   addO('poll',12,12,'你覺得這趟導覽怎麼樣？',{o:['很有趣','還不錯','再加強'],v:{}});
+   addO('timer',15,12);addO('book',18,12,'導覽留言簿');addO('bell',21,12);addO('music',24,12,'',{s:0,on:false});
+   addO('slides',27,12,'這是簡報第 1 頁||這是第 2 頁||所有人同步翻頁，講完還能接投票||這是最後一頁',{i:0});
+   addO('img',30,12,'圖片物件示範（可換成自己的圖片）',null,scenePic('plane','圖片物件示範'));
+   addO('audio',33,12,'這是語音導覽物件，可以朗讀這段說明、錄音或上傳音檔。');
+   addO('link',36,12,'https://www.wikipedia.org');
+   roomT(29,2,38,9,29,6);addO('note',33,3,'這裡是私人區，只有區內的人聽得到彼此。');
+   setT(2,16,3);setT(37,16,3);
+   SP.up(37,23);SP.el(35,23);
+   [[1,1],[38,24],[1,24],[20,20],[20,16]].forEach(([x,y])=>setT(x,y,5));
+  }},
+  {n:'導覽 2F',f(){
+   map.fill(17);frameT(0,0,W-1,H-1,1);
+   SP.dn(37,23);SP.el(35,23);
+   addO('note',20,12,'2F：只有同一層的人互相看得到、聽得到。');
+   [[1,1],[38,1],[1,24]].forEach(([x,y])=>setT(x,y,5));
+  }}
+ ]);
+}
+const panel=document.createElement('div');panel.id='tour';panel.hidden=true;
+panel.innerHTML='<div id="tname">🧭 導覽員　小語</div><div id="ttext"></div><div id="tdone"></div><div id="tbar"><span id="tprog"></span><button type="button" id="tnext">下一步 ▶</button><button type="button" id="tquit">結束導覽</button></div>';
+document.body.append(panel);
+const $t=id=>document.getElementById(id);
+function clearHl(){document.querySelectorAll('.tourhl').forEach(e=>e.classList.remove('tourhl'))}
+function tourGo(i){
+ const T=TOUR;if(!T)return;const S=TS[i];
+ if(!S){tourEnd();return}
+ T.i=i;T.act=null;T.last=null;T.ck=false;T.p0=[me.x,me.y];clearHl();
+ if(S.hl){const e=document.querySelector(S.hl);
+  if(e){if(S.hl==='#mapTools')e.open=true;e.classList.add('tourhl');e.scrollIntoView({block:'nearest'});
+   if(S.ck){const f=()=>{T.ck=true};e.addEventListener('change',f,{once:true})}}}
+ const n=T.npc;n.em='✨';n.emT=Date.now()+1500;
+ if(n.fl===S.fl&&n.fl===curFl){T.path=npcPath(n,S.at[0],S.at[1])}
+ else{n.fl=S.fl;n.x=S.at[0];n.y=S.at[1];T.path=[]}
+ $t('ttext').textContent=S.t;$t('tprog').textContent=(i+1)+' / '+TS.length;
+}
+function tourTick(){
+ const T=TOUR;if(!T)return;const S=TS[T.i],n=T.npc;if(!S)return;
+ if(T.path.length&&n.fl===curFl){const p=T.path.shift(),dx=p[0]-n.x,dy=p[1]-n.y;n.x=p[0];n.y=p[1];if(dx)n.f=dx;n.d=dy<0?0:dy>0?2:dx<0?1:3;n.mt=Date.now()}
+ const goal=!!S.ok,done=!goal||!!S.ok(T),last=T.i===TS.length-1;
+ $t('tnext').textContent=last?'完成':(done?'下一步 ▶':'跳過此步');
+ $t('tnext').classList.toggle('on',done);
+ $t('tdone').textContent=goal&&done?'✅ 做到了！按「下一步」繼續':'';
+}
+function startTour(){
+ if(TOUR||!stream)return;
+ closeModal();saveCur();
+ const B={fl:floors.slice(),cur:curFl,x:me.x,y:me.y,f:me.f,d:me.d,sv:{spot:me.spot,hand:me.hand,av:me.av,stx:me.stx,R}};
+ B.mute=stream.getTracks().filter(t=>t.enabled);B.mute.forEach(t=>t.enabled=false);
+ const npc={x:6,y:22,name:'小語',color:'#e86fa8',sk:3,f:1,d:2,mt:0,lpc:true,img:null,fl:0,em:'',emT:0,chat:'',chatT:0};
+ TOUR={B,npc,q:[],act:null,last:null,ck:false,i:-1,p0:[0,0],path:[]};
+ if(editing)$('ed').click();
+ buildFloors();
+ me.x=4;me.y=22;me.f=1;me.d=2;path=null;dest=null;follow=null;
+ renderFloors();plSig='';updateAV();
+ (presetCv[4]?Promise.resolve(presetCv[4]):lpcBuild(PRESETS[4])).then(c=>{
+  const im=new Image();im.onload=()=>{if(TOUR)TOUR.npc.img=im};im.src=c.toDataURL('image/png');
+ }).catch(()=>{});
+ panel.hidden=false;logMsg('<i>導覽開始：這是獨立的教學空間，不會影響其他人</i>');
+ tourGo(0);TOUR.iv=setInterval(tourTick,170);
+}
+function tourEnd(){
+ const T=TOUR;if(!T)return;
+ clearInterval(T.iv);clearHl();if(editing)$('ed').click();closeModal();
+ TOUR=null;panel.hidden=true;
+ const B=T.B;floors.length=0;B.fl.forEach(f=>floors.push(f));loadInto(B.cur);
+ me.fl=B.cur;me.x=B.x;me.y=B.y;me.f=B.f;me.d=B.d;path=null;dest=null;follow=null;
+ B.mute.forEach(t=>t.enabled=true);
+ const s=B.sv;
+ if(me.spot!==s.spot)$('spot').onclick();
+ if(me.hand!==s.hand)$('hand').onclick();
+ if(me.av!==s.av){$('avs').value=s.av;$('avs').onchange()}
+ if(me.stx!==s.stx){$('stx').value=s.stx;$('stx').onchange()}
+ if(R!==s.R){$('rad').value=String(s.R);$('rad').onchange()}
+ bc({t:'mv',x:me.x,y:me.y,f:me.f,d:me.d});
+ renderFloors();plSig='';updateAV();
+ T.q.forEach(([id,m])=>{try{onData(id,m)}catch(e){}});
+ logMsg('<i>導覽結束，已回到原本的空間</i>');
+}
+$t('tnext').onclick=()=>tourGo(TOUR.i+1);
+$t('tquit').onclick=tourEnd;
+$t('tourBtn').onclick=startTour;
+window.tourOffer=function(){
+ try{if(localStorage.getItem('mgTour'))return;localStorage.setItem('mgTour','1')}catch(e){}
+ mbox.textContent='';modal.hidden=false;
+ const p=document.createElement('pre');
+ p.textContent='嗨，我是小語！\n要不要讓我帶你逛一圈，一次體驗所有功能？\n（約 5 分鐘，隨時可以結束；之後也能按工具列的「🧭 導覽」重來）';
+ mbox.append(p,mkBtn('開始導覽',()=>{closeModal();startTour()}),mkBtn('先不要',closeModal));
+};
 })();
 </script>
 </body>
