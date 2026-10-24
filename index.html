@@ -305,9 +305,9 @@ const TEMPLATES={
   setT(3,22,3);setT(25,22,3);calcReg();
  },
  park(){
-  map.fill(10);frameT(0,0,W-1,H-1,13);
+  map.fill(10);frameT(0,0,W-1,H-1,25);
   fillT(1,13,38,13,14);fillT(19,1,19,24,14);fillT(23,15,30,21,7);
-  [[4,4],[8,3],[14,5],[30,4],[35,7],[5,25-6],[10,22],[33,22],[36,12],[3,12]].forEach(([x,y])=>setT(x,y,13));
+  [[4,4],[8,3],[14,5],[30,4],[35,7],[5,25-6],[10,22],[33,22],[36,12],[3,12]].forEach(([x,y])=>setT(x,y,25));
   [[17,12],[21,12],[17,14],[21,14]].forEach(([x,y])=>setT(x,y,6));
   fillT(4,16,9,21,4);setT(2,2,3);setT(37,23,3);calcReg();
  },
@@ -345,10 +345,10 @@ const TEMPLATES={
   calcReg();
  },
  market(){
-  map.fill(10);frameT(0,0,W-1,H-1,13);
+  map.fill(10);frameT(0,0,W-1,H-1,25);
   fillT(1,12,38,13,14);
   [4,10,16,22,28,34].forEach((x,i)=>{fillT(x,7,x+2,7,2);fillT(x,18,x+2,18,2);addO('note',x+1,6,'攤位 '+(i+1)+'：歡迎光臨！')});
-  [[4,2],[14,3],[30,3],[36,9],[3,22],[20,22],[35,22]].forEach(([x,y])=>setT(x,y,13));
+  [[4,2],[14,3],[30,3],[36,9],[3,22],[20,22],[35,22]].forEach(([x,y])=>setT(x,y,25));
   fillT(26,20,32,23,4);setT(2,2,3);setT(37,23,3);
   addO('pick',19,9);addO('dice',21,9);addO('bell',17,9);addO('poll',24,9,'今天最想買什麼？',{o:['食物','飾品','玩具'],v:{}});
   calcReg();
@@ -1525,7 +1525,7 @@ function makeFloors(defs){
 const SP={up:(x,y)=>setT(x,y,22),dn:(x,y)=>setT(x,y,23),el:(x,y)=>setT(x,y,24)};
 /* helpers for the museum templates */
 const hallT=(x0,y0,x1,y1,dx,dy,v)=>{frameT(x0,y0,x1,y1,1);fillT(x0+1,y0+1,x1-1,y1-1,v);setT(dx,dy,v)};
-const planeT=(cx,cy,v)=>{fillT(cx,cy-2,cx,cy+2,v);fillT(cx-2,cy-1,cx+2,cy-1,v);fillT(cx-1,cy+2,cx+1,cy+2,v)};
+const planeT=(cx,cy,v)=>setT(cx,cy,31);   /* 飛機改用 ✈️ 裝飾圖磚（31） */
 const MMC={0:'#2f3350',1:'#14131f',2:'#b07a4c',3:'#a06bff',4:'#7d5cc0',5:'#2e9a4a',6:'#a05cd0',7:'#4a90d9',8:'#9a3b49',9:'#5a3a1f',10:'#3f7a45',11:'#6b4228',12:'#dddddd',13:'#1f6b34',14:'#82828c',15:'#835735',16:'#ffffff',17:'#2aa89f',18:'#4a3470',19:'#7fd8ff',20:'#222222',21:'#39c5bb',22:'#ffcf4a',23:'#ffcf4a',24:'#ffffff'};
 Object.assign(MMC,{25:'#1f6b34',26:'#175a2c',27:'#2e8a4a',28:'#d96aa7',29:'#e0527a',30:'#e6b422',31:'#cfd6e6',32:'#cfd6e6',33:'#cfd6e6'});
 function miniMapPic(){
@@ -1542,9 +1542,7 @@ function scenePic(kind,label){
  else{g.addColorStop(0,'#f2b880');g.addColorStop(.55,'#ffe9c4');g.addColorStop(.56,'#2a6fb0');g.addColorStop(1,'#1d4f86')}
  x.fillStyle=g;x.fillRect(0,0,320,180);
  if(kind==='plane'){
-  x.fillStyle='#e8eef5';x.strokeStyle='#5a6b80';x.lineWidth=2;x.beginPath();
-  [[160,24],[170,76],[256,112],[256,124],[168,104],[166,138],[196,152],[196,160],[160,152],[124,160],[124,152],[154,138],[152,104],[64,124],[64,112],[150,76]].forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));
-  x.closePath();x.fill();x.stroke();
+  x.font='96px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('✈️',160,76);
  }else if(kind==='river'){
   x.strokeStyle='#bfe4ff';x.lineWidth=2;
   for(let r=0;r<4;r++){x.beginPath();for(let i=0;i<=320;i+=8)x.lineTo(i,112+r*10+Math.sin(i/14+r)*3);x.stroke()}
@@ -1589,9 +1587,9 @@ const MULTI={
    SP.dn(35,2);SP.up(37,2);SP.el(37,4);
   }},
   {n:'4F 屋頂花園',f(){
-   map.fill(10);frameT(0,0,W-1,H-1,13);
+   map.fill(10);frameT(0,0,W-1,H-1,25);
    fillT(1,12,38,13,14);fillT(19,1,19,24,14);fillT(23,15,30,21,7);fillT(4,16,9,21,4);
-   [[4,4],[8,3],[14,5],[30,5],[35,8],[10,22],[33,22],[3,12]].forEach(([x,y])=>setT(x,y,13));
+   [[4,4],[8,3],[14,5],[30,5],[35,8],[10,22],[33,22],[3,12]].forEach(([x,y])=>setT(x,y,25));
    [[17,11],[21,11],[17,14],[21,14]].forEach(([x,y])=>setT(x,y,6));
    addO('note',17,9,'屋頂花園：這裡沒有牆。左下角紫色區域是私人聊天區。');addO('music',14,16,'',{s:0,on:false});
    SP.dn(35,2);SP.el(37,4);
@@ -1674,7 +1672,7 @@ const MULTI={
    lineT([[1030,585],[1060,540],[1110,520],[1135,510]],14,pk);lineT([[1080,720],[1133,718]],14,pk);
    lineT([[575,1225],[575,1315],[780,1315],[900,1315],[905,1220],[900,1100],[920,1030]],14,pk);lineT([[820,1315],[820,1425]],14,pk);lineT([[430,1315],[575,1315]],14,pk);
    /* 落羽松步道 L */
-   polyT(rect(420,530,560,550),13,pk);polyT(rect(420,595,560,615),13,pk);lineT([[372,570],[600,570],[640,600],[630,660]],14,pk);
+   polyT(rect(420,530,560,550),25,pk);polyT(rect(420,595,560,615),25,pk);lineT([[372,570],[600,570],[640,600],[630,660]],14,pk);
    /* 停車場 */
    polyT(rect(600,460,680,530),17,pk);polyT(rect(755,460,880,530),17,pk);polyT(rect(485,1335,700,1420),17,pk);polyT(rect(865,1335,935,1420),17,pk);polyT(rect(400,810,480,900),17,pk);
    /* 景點 */
@@ -1697,7 +1695,7 @@ const MULTI={
    SP.up(10,13);SP.up(10,14);SP.el(10,12);
    /* 出入口與零星樹木 */
    setT(16,0,14);setT(17,0,14);setT(20,25,14);setT(21,25,14);
-   [[26,2],[28,2],[30,3],[29,8],[27,12],[27,19],[29,20],[28,22],[5,23],[9,3],[24,12]].forEach(([x,y])=>{if(map[idx(x,y)]===10)setT(x,y,13)});
+   [[26,2],[28,2],[30,3],[29,8],[27,12],[27,19],[29,20],[28,22],[5,23],[9,3],[24,12]].forEach(([x,y])=>{if(map[idx(x,y)]===10)setT(x,y,25)});
    /* 標示物件（名稱與英文取自官方導覽圖圖例） */
    const L=[['A','藝術之丘 Art Hill',815,1168],['B','水岸舞台 Waterfront Stage',866,1080],['C','水景花園 Waterscape Garden',1030,1063],['D','圓形廣場 Round Plaza',880,1020],['E','大千石庭 Dai-chien Stone Garden',713,1003],['F','透南風廣場 Southern Breeze Plaza',669,888],['G','出眺景觀平台 Scenic Viewing Deck',874,830],['H','熱帶花園 Tropical Garden',1133,718],['I','藝文劇場 Art Theater',1135,507],['J','人工濕地 Constructed Wetland',896,612],['K','慶典花園 Festival Garden',835,612],['L','落羽松步道 Bald Cypress Pathway',455,566]];
    L.forEach(([k,t,x,y])=>put(pk,x,y,'note','園區景點 '+k+'：'+t));
@@ -1912,9 +1910,9 @@ const MULTI={
    SP.dn(2,12);SP.up(37,12);SP.el(3,3);
   }},
   {n:'C 廳 自然',f(){
-   map.fill(10);frameT(0,0,W-1,H-1,13);
+   map.fill(10);frameT(0,0,W-1,H-1,25);
    fillT(1,12,38,13,14);fillT(19,1,19,24,14);fillT(23,15,30,21,7);fillT(4,16,9,21,4);
-   [[5,4],[9,3],[14,6],[30,4],[35,7],[10,22],[33,22],[26,9],[6,10]].forEach(([x,y])=>setT(x,y,13));
+   [[5,4],[9,3],[14,6],[30,4],[35,7],[10,22],[33,22],[26,9],[6,10]].forEach(([x,y])=>setT(x,y,25));
    [[17,11],[21,11],[17,14],[21,14]].forEach(([x,y])=>setT(x,y,6));
    addO('note',24,13,'C1（示範展品）：池塘生態角，請把這裡換成你的展品說明。');
    addO('note',17,9,'C 廳是戶外風格的展廳；左下角紫色區域是私人聊天區。');addO('music',14,16,'',{s:0,on:false});
