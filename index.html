@@ -236,7 +236,7 @@ body.meet #vids .v{width:auto;height:100%!important}
   <div id="bar">
    <button id="tourBtn">🧭 導覽</button><button id="mic">麥克風 開</button><button id="cam">鏡頭 開</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
    <details id="mapTools" open><summary>地圖工具（編輯／匯出入／範本）</summary><div class="mt"><button id="ed">編輯地圖</button>
-   <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區導覽圖＋1F 依官方圖，2F/3F 示意）</option><option value="avi">✈ 航空教育展示館（2 層・示意）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
+   <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區導覽圖＋1F 依官方圖，2F/3F 示意）</option><option value="avi">✈ 航空教育展示館（1F、2F 依官方樓層圖）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
    <span id="tools"></span></div></details>
    <span id="status">連線中…</span>
   </div>
@@ -1758,51 +1758,86 @@ const MULTI={
    guideMap(12,16);
   }}
  ])},
- avi(){makeFloors([
+ avi(){
+  /* ---- helpers: coordinates are given in the ORIGINAL IMAGE PIXELS and converted to the 40x26 grid ---- */
+  const inP=(x,y,p)=>{let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
+  const polyT=(p,v,tr)=>{const q=p.map(a=>tr(a[0],a[1]));for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(inP(x+.5,y+.5,q))setT(x,y,v)};
+  const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  const near=(x,y)=>{const bl=(a,b)=>!inb(a,b)||BLOCK.has(map[idx(a,b)])||STAIRT.has(map[idx(a,b)])||objs.some(o=>o.x===a&&o.y===b);x=Math.floor(x);y=Math.floor(y);for(let r=0;r<=6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bl(x+dx,y+dy))return [x+dx,y+dy];return [x,y]};
+  const put=(type,x,y,text,d,src)=>{const p=near(x,y);addO(type,p[0],p[1],text,d,src)};
+  const g1=(x,y)=>[x/35.3,y/33.8];        /* 1F 樓層圖（1410×880）→ grid */
+  const g2=(x,y)=>[x/29.5,(y-10)/20];     /* 2F 樓層圖（1180×530）→ grid */
+  makeFloors([
   {n:'1F 地面展示區',f(){
-   map.fill(14);frameT(0,0,W-1,H-1,1);
-   [[6,8],[14,8],[24,8],[33,8],[6,18],[14,18],[24,18]].forEach(([x,y])=>planeT(x,y,16));
-   hallT(29,15,37,23,29,19,8);
-   SP.up(37,3);SP.el(37,5);
-   addO('audio',10,3,'歡迎來到航空教育展示館的示意場景。這座館位在高雄市岡山區的空軍官校校區內，是一座懸吊式飛機博物館，二○一五年九月開幕，館內約有三十四架軍機，一部分停在地面，一部分懸吊在半空。這一層是地面展示區，二樓有售票大廳、懸吊展示、武器裝備區、發動機區和多媒體劇場。想看實景照片與最新資訊，請走到上方的連結物件，按 X 開啟官方網站。');
-   addO('note',14,3,'館方資訊：高雄市岡山區致遠路 55 號（空軍官校校區內）｜電話 07-625-8111｜網路資料顯示全年 08:00–17:00 開放，門票約 200 元（4–6 歲 50 元、3 歲以下免費）。實際票價與公休日請以官方網站為準。');
-   addO('link',22,3,'https://www.aeeh.com.tw/');
-   addO('link',26,3,'https://www.facebook.com/AirforceMuseum.TW/');
-   addO('link',30,3,'https://zh.wikipedia.org/wiki/%E8%88%AA%E7%A9%BA%E6%95%99%E8%82%B2%E5%B1%95%E7%A4%BA%E9%A4%A8');
-   addO('link',34,3,'https://khh.travel/en/attractions/detail/507/');
-   addO('note',22,5,'↑ 連結說明（由左到右）：官方網站（aeeh.com.tw）、官方粉絲專頁（有實景照片與活動消息）、維基百科介紹、高雄旅遊網景點頁。');
-   addO('link',26,5,'https://commons.wikimedia.org/wiki/Category:ROCAF_Aviation_Education_Exhibition_Hall');
-   addO('link',30,5,'https://www.google.com/maps/search/?api=1&query=%E8%88%AA%E7%A9%BA%E6%95%99%E8%82%B2%E5%B1%95%E7%A4%BA%E9%A4%A8');
-   addO('note',34,5,'↑ 下面兩個連結：維基共享資源的館內實景照片分類、Google 地圖導航。');
-   addO('poll',18,3,'你最想近看哪一類飛機？',{o:['戰鬥機','轟炸機','教練機','運輸機'],v:{}});
-   [[6,12],[14,12],[24,12],[33,12],[6,22],[14,22],[24,22]].forEach(([x,y],i)=>addO('note',x,y,'地面展品 '+(i+1)+'（示意）：請換成實際機種的名稱、服役經歷與解說。'));
-   addO('note',31,17,'駕駛艙體驗區（示意）：可以登上真正的戰機駕駛艙，也能穿上空軍服裝與頭盔拍照（依現場為準）。');
-   addO('img',35,17,'軍機剪影（示意插圖）。想換成實景照片：打開後按「貼上網址」或「上傳圖片」，照片會同步給所有人。實景照片可到官方粉絲專頁或維基共享資源取得，使用前請確認授權。',null,scenePic('plane','軍機剪影（示意插圖）'));
-   addO('pick',31,21);
-   guideMap(3,3);
+   map.fill(1);
+   polyT([[100,300],[160,230],[370,190],[950,190],[1150,200],[1260,230],[1340,330],[1395,440],[1360,520],[1100,550],[345,550],[100,520],[15,440]],14,g1); /* 橢圓形大廳地面 */
+   [[8,7],[14,7],[20,7],[26,7],[32,8],[6,11],[12,12],[18,11],[25,12],[32,12]].forEach(([x,y])=>planeT(x,y,16));                       /* 地面展示的飛機 */
+   polyT([[370,140],[950,130],[950,190],[370,190]],15,g1);                    /* 無障礙斜坡道（上） */
+   polyT([[540,480],[1140,490],[1140,545],[540,545]],15,g1);                  /* 無障礙斜坡道（下） */
+   polyT(rect(455,40,950,135),17,g1);                                         /* 航空教育展示區 */
+   polyT([[345,550],[1065,550],[1100,700],[315,700]],1,g1);fillT(10,17,29,19,8);setT(20,16,8);setT(21,16,8);setT(21,20,8); /* 主題特展區 */
+   polyT(rect(250,40,420,125),15,g1);polyT(rect(950,40,1130,125),15,g1);      /* 上方兩側：樓梯、廁所 */
+   polyT(rect(85,550,330,690),15,g1);polyT(rect(1090,550,1260,690),15,g1);   /* 下方兩側：樓梯、廁所 */
+   fillT(27,4,28,4,15);
+   fillT(18,21,24,22,14);                                                     /* 出口 */
+   SP.up(8,1);SP.up(8,2);SP.up(30,1);SP.up(30,2);SP.up(5,17);SP.up(5,18);SP.up(34,17);SP.up(34,18);
+   frameT(0,0,W-1,H-1,1);
+   put('note',20,2,'航空教育展示區（圖上以藍色標示，位於大廳北側）。');
+   put('note',20,18,'主題特展區（圖上以黃色標示）：特展主題請以官方網站為準。');
+   put('note',20,9,'地面展示區：地面展示的軍機。');
+   put('note',18,4,'無障礙斜坡道（上）。');put('note',24,14,'無障礙斜坡道（下）：通往主題特展區。');
+   put('note',21,21,'出口。');
+   put('note',8,3,'樓梯（左上）：往 2F。');put('note',11,3,'廁所（左上）。');put('note',30,3,'樓梯（右上）：往 2F。');put('note',28,3,'廁所（右上）。');
+   put('note',5,19,'樓梯（左下）：往 2F。');put('note',8,19,'廁所（左下）。');put('note',34,19,'樓梯（右下）：往 2F。');put('note',32,19,'廁所（右下）。');
+   put('audio',22,21,'歡迎來到航空教育展示館。這一層依官方 1F 樓層圖繪製：上方是航空教育展示區，中間是地面展示區，下方是主題特展區，出口在最下方。四個角落都有樓梯與廁所，可以上到二樓的懸吊展示區。這座館位在高雄市岡山區的空軍官校校區內，是一座懸吊式飛機博物館，二○一五年九月開幕，館內約有三十四架軍機。');
+   put('note',18,22,'館方資訊：高雄市岡山區致遠路 55 號（空軍官校校區內）｜電話 07-625-8111｜網路資料顯示全年 08:00–17:00 開放，門票約 200 元（4–6 歲 50 元、3 歲以下免費）。實際票價與公休日請以官方網站為準。');
+   put('link',19,21,'https://www.aeeh.com.tw/');
+   put('link',20,22,'https://www.facebook.com/AirforceMuseum.TW/');
+   put('link',22,22,'https://zh.wikipedia.org/wiki/%E8%88%AA%E7%A9%BA%E6%95%99%E8%82%B2%E5%B1%95%E7%A4%BA%E9%A4%A8');
+   put('link',23,21,'https://khh.travel/en/attractions/detail/507/');
+   put('note',24,22,'↑ 出口前的連結（由左到右）：官方網站、官方粉絲專頁、維基百科、高雄旅遊網景點頁，以及下排的 Google 地圖等。');
+   put('link',17,21,'https://commons.wikimedia.org/wiki/Category:ROCAF_Aviation_Education_Exhibition_Hall');
+   put('link',17,22,'https://www.google.com/maps/search/?api=1&query=%E8%88%AA%E7%A9%BA%E6%95%99%E8%82%B2%E5%B1%95%E7%A4%BA%E9%A4%A8');
+   put('poll',16,3,'你最想近看哪一類飛機？',{o:['戰鬥機','轟炸機','教練機','運輸機'],v:{}});
+   [[8,9],[14,9],[20,9],[26,9],[32,10],[6,13],[18,13]].forEach(([x,y],i)=>put('note',x,y,'地面展品 '+(i+1)+'（示意）：請換成實際機種的名稱、服役經歷與解說。'));
+   put('note',24,17,'駕駛艙體驗區（示意）：可以登上真正的戰機駕駛艙，也能穿上空軍服裝與頭盔拍照（依現場為準）。');
+   put('img',27,18,'軍機剪影（示意插圖）。想換成實景照片：打開後按「貼上網址」或「上傳圖片」，照片會同步給所有人。實景照片可到官方粉絲專頁或維基共享資源取得，使用前請確認授權。',null,scenePic('plane','軍機剪影（示意插圖）'));
+   put('pick',14,18);
+   guideMap(12,18);
   }},
-  {n:'2F 售票與懸吊展示',f(){
-   map.fill(14);frameT(0,0,W-1,H-1,1);
-   hallT(2,2,12,9,12,6,15);fillT(4,4,10,4,2);
-   hallT(2,16,12,23,7,16,17);hallT(14,16,24,23,19,16,17);hallT(26,16,37,23,28,16,18);
-   fillT(28,19,35,19,6);fillT(28,21,35,21,6);fillT(29,17,34,17,12);setT(27,17,20);setT(36,17,20);
-   fillT(4,18,10,18,16);fillT(16,18,22,18,16);
-   planeT(20,6,18);planeT(28,9,18);planeT(34,5,18);
-   SP.dn(37,11);SP.el(37,13);
-   addO('note',5,5,'售票處：入館的售票大廳在二樓。網路資料顯示門票約 200 元，開放時間與票價請以官方網站為準。');
-   addO('bell',8,5);
-   addO('link',10,5,'https://www.aeeh.com.tw/');
-   addO('link',11,7,'https://www.facebook.com/AirforceMuseum.TW/');
-   addO('img',15,3,'懸吊軍機（示意插圖）。館內共約 34 架軍機，其中約 19 架懸吊在天花板下。想換成實景照片：打開後按「貼上網址」或「上傳圖片」。',null,scenePic('plane','懸吊軍機（示意插圖）'));
-   addO('note',20,10,'懸吊展品 1（示意）：天花板下方懸吊的軍機。地上的紫色剪影是它的投影。');
-   addO('note',28,13,'懸吊展品 2（示意）：請換成實際機種的名稱與解說。');
-   addO('note',34,9,'懸吊展品 3（示意）：請換成實際機種的名稱與解說。');
-   addO('audio',13,12,'二樓是售票大廳與懸吊展示區。往下方的房間，依序是發動機區、武器裝備區，右下角是多媒體劇場。這些空間都是示意配置，請依實際導覽圖調整。');
-   addO('note',5,21,'發動機區（示意）：展示各型發動機。');
-   addO('note',17,21,'武器裝備區（示意）：展示飛彈與各式裝備。');
-   addO('slides',36,18,'多媒體劇場（示意）||航空教育展示館結合教育、航太、科技與文化||展示主題超過十個||位置：高雄市岡山區致遠路 55 號，空軍官校校區內||詳細資訊請看官方網站 aeeh.com.tw 或粉絲專頁「航空教育展示館」||可以在這裡同步播放簡報或活動說明',{i:0});
-   addO('link',33,18,'https://www.aeeh.com.tw/');
-   guideMap(3,12);
+  {n:'2F 懸吊展示區',f(){
+   map.fill(1);
+   polyT([[90,125],[200,100],[290,92],[900,92],[1010,105],[1100,160],[1170,260],[1120,310],[90,310],[10,260]],14,g2); /* 懸掛展示區地面 */
+   [[6,9],[11,7],[17,6],[23,7],[29,6],[34,9],[10,12],[18,11],[25,12],[32,12]].forEach(([x,y])=>planeT(x,y,18));       /* 懸吊軍機的投影 */
+   hallT(13,1,20,4,16,4,18);hallT(20,1,27,4,24,4,18);                          /* 武器裝備區、發動機區（圖上紫色） */
+   hallT(8,1,13,4,10,4,17);hallT(27,1,33,4,30,4,17);                           /* 上方兩側：樓梯、廁所 */
+   hallT(2,15,8,19,5,15,17);hallT(31,15,37,19,34,15,17);                       /* 下方兩側：樓梯、廁所 */
+   hallT(8,15,13,19,10,15,15);                                                 /* 圖書文獻室（橘色） */
+   hallT(13,15,17,19,15,15,10);                                                /* 多媒體劇場（綠色） */
+   fillT(18,15,21,19,0);setT(19,17,2);setT(20,17,2);                           /* 服務台（藍色） */
+   hallT(22,15,28,19,25,15,14);hallT(28,15,31,19,29,15,14);                    /* 兩間圖上未標名稱的房間 */
+   fillT(19,20,20,24,14);                                                      /* 入口 */
+   SP.dn(9,2);SP.dn(9,3);SP.dn(30,2);SP.dn(30,3);SP.dn(4,17);SP.dn(4,18);SP.dn(35,17);SP.dn(35,18);
+   frameT(0,0,W-1,H-1,1);
+   put('note',16,2,'武器裝備區：展示飛彈與各式裝備。');
+   put('note',24,2,'發動機區：展示各型發動機。');
+   put('note',10,17,'圖書文獻室。');
+   put('note',15,17,'多媒體劇場。');
+   put('slides',15,18,'多媒體劇場||航空教育展示館結合教育、航太、科技與文化||展示主題超過十個||位置：高雄市岡山區致遠路 55 號，空軍官校校區內||詳細資訊請看官方網站 aeeh.com.tw 或粉絲專頁「航空教育展示館」||可以在這裡同步播放簡報或活動說明',{i:0});
+   put('note',19,16,'服務台（圖上以藍色標示，位於入口正前方）。');
+   put('bell',18,16);
+   put('note',24,17,'這間房間在圖上沒有標示名稱。');put('note',29,17,'這間房間在圖上沒有標示名稱。');
+   put('note',9,3,'樓梯（左上）：往 1F。');put('note',12,3,'廁所（左上）。');put('note',30,4,'樓梯（右上）：往 1F。');put('note',28,3,'廁所（右上）。');
+   put('note',4,19,'樓梯（左下）：往 1F。');put('note',7,18,'廁所（左下）。');put('note',35,19,'樓梯（右下）：往 1F。');put('note',32,18,'廁所（右下）。');
+   put('note',19,23,'入口。館方資訊：開放時間與票價請以官方網站為準。');
+   put('link',20,23,'https://www.aeeh.com.tw/');
+   put('link',19,22,'https://www.facebook.com/AirforceMuseum.TW/');
+   put('img',15,12,'懸吊軍機（示意插圖）。館內共約 34 架軍機，其中約 19 架懸吊在天花板下。想換成實景照片：打開後按「貼上網址」或「上傳圖片」。',null,scenePic('plane','懸吊軍機（示意插圖）'));
+   put('note',18,9,'懸吊展品 1（示意）：天花板下方懸吊的軍機。地上的紫色剪影是它的投影。');
+   put('note',25,10,'懸吊展品 2（示意）：請換成實際機種的名稱與解說。');
+   put('note',33,10,'懸吊展品 3（示意）：請換成實際機種的名稱與解說。');
+   put('audio',20,12,'二樓是懸吊展示區，軍機從天花板懸吊下來。北側是武器裝備區與發動機區，南側由左到右是圖書文獻室、多媒體劇場與服務台，入口在最下方。四個角落都有樓梯與廁所。');
+   guideMap(14,13);
   }}
  ])},
  expo(){makeFloors([
