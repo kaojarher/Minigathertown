@@ -59,6 +59,10 @@ canvas{display:block;width:100%;max-width:1280px;image-rendering:pixelated;borde
 #emo button{font-size:18px;padding:2px 8px}
 #tools{display:none;gap:6px;flex-wrap:wrap}
 #tools.show{display:flex}
+#tools .ttabs,#tools .tg{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+#tools .tg[hidden]{display:none}
+#tools .tl{align-self:center;font-size:12px;opacity:.7;margin-left:4px}
+#tools .tt.on{outline:2px solid #ffcf4a}
 .hint{color:var(--dim);font-size:12px}
 #modal{position:fixed;top:0;right:0;bottom:0;left:0;background:#000a;display:grid;place-items:center;z-index:8}
 #modal[hidden]{display:none}
@@ -234,7 +238,7 @@ body.meet #vids .v{width:auto;height:100%!important}
   <div id="pad" aria-label="虛擬方向鍵"><button type="button" data-k="ArrowUp" aria-label="上">▲</button><button type="button" data-k="ArrowLeft" aria-label="左">◀</button><button type="button" data-k="ArrowDown" aria-label="下">▼</button><button type="button" data-k="ArrowRight" aria-label="右">▶</button></div>
   <div id="pact"><button type="button" id="zout" aria-label="縮小">－</button><button type="button" id="zin" aria-label="放大">＋</button><button type="button" id="xbtn">X 互動</button></div></div>
   <div id="bar">
-   <button id="tourBtn">🧭 導覽</button><button id="mic">麥克風 開</button><button id="cam">鏡頭 開</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
+   <button id="tourBtn">🧭 導覽</button><button id="mic">麥克風 開</button><button id="cam">鏡頭 關</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
    <details id="mapTools" open><summary>地圖工具（編輯／匯出入／範本）</summary><div class="mt"><button id="ed">編輯地圖</button>
    <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區導覽圖＋1F 依官方圖，2F/3F 示意）</option><option value="avi">✈ 航空教育展示館（1F、2F 依官方樓層圖）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
    <span id="tools"></span></div></details>
@@ -267,7 +271,10 @@ const floors=[{n:'1F',m:new Uint8Array(W*H),o:[]}];let curFl=0,swapping=false;
 const idx=(x,y)=>y*W+x, inb=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
 const TILE_NAMES=['地板','牆','桌子','傳送門','私人區','盆栽','沙發','水池','地毯','書櫃','草地','電腦桌','白板','樹','石板路','木地板','展示台','青綠地磚','舞台','玻璃櫃','音響','海報牆','上樓梯','下樓梯','電梯'];
 const EMOTES=['👋','😄','👍','❤️','🎉','🤔'];
-const BLOCK=new Set([1,2,5,6,7,9,11,12,13,16,19,20,21]),MAXT=24;
+const BLOCK=new Set([1,2,5,6,7,9,11,12,13,16,19,20,21]),MAXT=33;
+/* 裝飾物件圖磚：[編號, emoji, 名稱, 是否擋路, 分類]（編號 25 起，不影響舊地圖） */
+const DECO=[[25,'🌳','樹',1,'樹'],[26,'🌲','松樹',1,'樹'],[27,'🌴','棕櫚樹',1,'樹'],[28,'🌸','櫻花',0,'花'],[29,'🌷','鬱金香',0,'花'],[30,'🌻','向日葵',0,'花'],[31,'✈️','客機',1,'飛機'],[32,'🛩️','小飛機',1,'飛機'],[33,'🚁','直升機',1,'飛機']];
+DECO.forEach(d=>{if(d[3])BLOCK.add(d[0])});
 const setT=(x,y,v)=>{if(inb(x,y))map[idx(x,y)]=v};
 const fillT=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)setT(x,y,v)};
 const frameT=(x0,y0,x1,y1,v)=>{for(let x=x0;x<=x1;x++){setT(x,y0,v);setT(x,y1,v)}for(let y=y0;y<=y1;y++){setT(x0,y,v);setT(x1,y,v)}};
@@ -445,8 +452,9 @@ function setupConn(c,outgoing){
 }
 function callPeer(id){const call=peer.call(id,stream);attachCall(call)}
 function attachCall(call){
+ activeCalls.add(call);
  call.on('stream',s=>{const p=P(call.peer);p.vid.srcObject=s;p.has=true;updateAV()});
- call.on('close',()=>{const p=peers[call.peer];if(p)p.has=false});
+ call.on('close',()=>{activeCalls.delete(call);const p=peers[call.peer];if(p)p.has=false});
 }
 function onData(id,m){
  if(TOUR&&(FLMSG.has(m.t)||/^f(loors|add|ren|del)$/.test(m.t))){TOUR.q.push([id,m]);return}
@@ -501,12 +509,28 @@ function boot(wantHost){
  });
 }
 async function getMedia(){
- try{return await navigator.mediaDevices.getUserMedia({video:{width:320,height:240},audio:true})}
- catch(e){
-  try{return await navigator.mediaDevices.getUserMedia({audio:true})}
-  catch(e2){logMsg('<i>沒有攝影機或麥克風，只能用文字聊天</i>');return new MediaStream()}
- }
+ /* 加入時只取麥克風；攝影機要按「鏡頭」才會啟用（省電） */
+ try{return await navigator.mediaDevices.getUserMedia({audio:true})}
+ catch(e){logMsg('<i>沒有麥克風，只能用文字聊天</i>');return new MediaStream()}
 }
+let camT=null,phT=null,localVid=null;const activeCalls=new Set();
+function mkPlaceholder(){try{const c=document.createElement('canvas');c.width=320;c.height=240;const g=c.getContext('2d');g.fillStyle='#14131f';g.fillRect(0,0,320,240);return c.captureStream(1).getVideoTracks()[0]}catch(e){return null}}
+function camSetup(){stream.getVideoTracks().forEach(t=>{t.stop();stream.removeTrack(t)});phT=mkPlaceholder();if(phT)stream.addTrack(phT);$('cam').textContent='鏡頭 關';$('cam').classList.add('on')}
+function swapVideo(t){
+ stream.getVideoTracks().forEach(x=>stream.removeTrack(x));if(t)stream.addTrack(t);
+ activeCalls.forEach(c=>{try{const sd=c.peerConnection.getSenders().find(x=>x.track&&x.track.kind==='video');if(sd&&t)sd.replaceTrack(t)}catch(e){}});
+ if(localVid)localVid.srcObject=stream;
+}
+function camOffUI(){const b=$('cam');b.textContent='鏡頭 關';b.classList.add('on')}
+$('cam').onclick=async()=>{
+ const b=$('cam');
+ if(camT){camT.onended=null;camT.stop();camT=null;swapVideo(phT);camOffUI();return}
+ try{
+  const vs=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240}});
+  camT=vs.getVideoTracks()[0];camT.onended=()=>{if(camT){camT=null;swapVideo(phT);camOffUI()}};
+  swapVideo(camT);b.textContent='鏡頭 開';b.classList.remove('on');
+ }catch(e){logMsg('<i>沒有可用的鏡頭，或尚未允許使用</i>')}
+};
 
 /* ---------- join ---------- */
 $('jf').addEventListener('submit',async e=>{
@@ -515,11 +539,11 @@ $('jf').addEventListener('submit',async e=>{
  room=$('room').value.trim();
  hostId='minigather-'+room;
  $('go').disabled=true;$('go').textContent='準備中…';
- stream=await getMedia();
+ stream=await getMedia();camSetup();
  stream.getAudioTracks().forEach(t=>t.enabled=false);$('mic').textContent='麥克風 關';$('mic').classList.add('on');
  const lv=document.createElement('div');lv.className='v';
  const v=document.createElement('video');v.autoplay=true;v.muted=true;v.playsInline=true;v.srcObject=stream;
- lv.append(v);const sp=document.createElement('span');sp.textContent=me.name+'（我）';lv.append(sp);$('vids').prepend(lv);
+ localVid=v;lv.append(v);const sp=document.createElement('span');sp.textContent=me.name+'（我）';lv.append(sp);$('vids').prepend(lv);
  $('join').remove();
  boot(true);setTimeout(()=>window.tourOffer&&tourOffer(),900);
 });
@@ -531,7 +555,7 @@ function toggle(btn,kind,label){
   btn.textContent=label+(on?' 開':' 關');btn.classList.toggle('on',!on);
  };
 }
-toggle($('mic'),'a','麥克風');toggle($('cam'),'v','鏡頭');
+toggle($('mic'),'a','麥克風');
 
 /* ---------- chat & emotes ---------- */
 $('chat').addEventListener('submit',e=>{
@@ -543,10 +567,19 @@ EMOTES.forEach(em=>{const b=document.createElement('button');b.textContent=em;b.
 
 /* ---------- editor ---------- */
 let editing=false,brush=1,painting=false;
-TILE_NAMES.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=i;
- b.onclick=()=>{brush=i;[...$('tools').children].forEach(x=>x.classList.toggle('on',x.dataset.v===String(i)))};$('tools').append(b)});
-[['o:note','便條'],['o:link','連結'],['o:board','白板'],['o:dice','骰子'],['o:poll','投票'],['o:timer','計時器'],['o:book','留言板'],['o:ttt','井字遊戲'],['o:pick','抽籤'],['o:video','影片'],['o:bell','門鈴'],['o:gomoku','五子棋'],['o:rps','猜拳'],['o:music','音樂盒'],['o:slides','簡報'],['o:img','圖片'],['o:audio','語音'],['o:del','移除物件']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=v;b.onclick=()=>{brush=v;[...$('tools').children].forEach(x=>x.classList.toggle('on',x.dataset.v===v))};$('tools').append(b)});
-$('tools').children[1].classList.add('on');
+const grp={};
+function showGrp(k){for(const j in grp)grp[j].hidden=j!==k;$('tools').querySelectorAll('.tt').forEach(b=>b.classList.toggle('on',b.dataset.g===k))}
+function toolSel(v){$('tools').querySelectorAll('button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v))}
+{const bar=document.createElement('div');bar.className='ttabs';
+ [['t','地形'],['d','裝飾物件'],['o','互動物件']].forEach(([k,n])=>{const g=document.createElement('div');g.className='tg';grp[k]=g;const tb=document.createElement('button');tb.textContent=n;tb.className='tt';tb.dataset.g=k;tb.onclick=()=>showGrp(k);bar.append(tb)});
+ $('tools').append(bar,grp.t,grp.d,grp.o)}
+TILE_NAMES.slice(0,25).forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=i;
+ b.onclick=()=>{brush=i;toolSel(String(i))};grp.t.append(b)});
+['樹','花','飛機'].forEach(cat=>{const lb=document.createElement('span');lb.className='tl';lb.textContent=cat;grp.d.append(lb);
+ DECO.filter(d=>d[4]===cat).forEach(d=>{const b=document.createElement('button');b.textContent=d[1]+' '+d[2];b.title=d[2]+(d[3]?'（擋路）':'（可穿越）');b.dataset.v=String(d[0]);
+  b.onclick=()=>{brush=d[0];toolSel(String(d[0]))};grp.d.append(b)})});
+[['o:note','便條'],['o:link','連結'],['o:board','白板'],['o:dice','骰子'],['o:poll','投票'],['o:timer','計時器'],['o:book','留言板'],['o:ttt','井字遊戲'],['o:pick','抽籤'],['o:video','影片'],['o:bell','門鈴'],['o:gomoku','五子棋'],['o:rps','猜拳'],['o:music','音樂盒'],['o:slides','簡報'],['o:img','圖片'],['o:audio','語音'],['o:del','移除物件']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=v;b.onclick=()=>{brush=v;toolSel(v)};grp.o.append(b)});
+showGrp('t');toolSel('1');
 $('ed').onclick=()=>{editing=!editing;$('ed').classList.toggle('on',editing);$('tools').classList.toggle('show',editing);
  if(editing)logMsg('<i>編輯中：點擊或拖曳地圖即可放置，所有人會同步看到</i>')};
 const cv=$('cv'),ctx=cv.getContext('2d');
@@ -615,7 +648,14 @@ setInterval(()=>{
 setInterval(()=>{updateAV();tick2()},400);
 
 /* ---------- render ---------- */
+const decoSpr={};
+function decoSprite(v){let c=decoSpr[v];if(c)return c;const d=DECO.find(q=>q[0]===v);c=document.createElement('canvas');c.width=c.height=T*S;
+ const g=c.getContext('2d');g.font=Math.round(T*S*.86)+'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(d?d[1]:'',c.width/2,c.height/2+2);return decoSpr[v]=c}
+function drawDeco(v,x,y){const px=x*T,py=y*T,a=(x+y)%2;
+ ctx.fillStyle=v>=31?(a?'#8a8a94':'#82828c'):(a?'#3f7a45':'#3a7240');ctx.fillRect(px,py,T,T);   /* 飛機放在石板地、樹花放在草地 */
+ ctx.imageSmoothingEnabled=true;ctx.drawImage(decoSprite(v),px,py,T,T);ctx.imageSmoothingEnabled=false}
 function drawTile(v,x,y){
+ if(v>=25)return drawDeco(v,x,y);
  if(v<=4)return drawTileOld(v,x,y);
  const px=x*T,py=y*T,c=ctx,a=(x+y)%2;
  c.fillStyle={8:'#7a2f3b',10:a?'#3f7a45':'#3a7240',13:a?'#3f7a45':'#3a7240',14:a?'#8a8a94':'#82828c',15:a?'#8a5d3a':'#835735',7:'#2a6fb0',17:a?'#2aa89f':'#27a098',18:a?'#4a3470':'#42306a'}[v]||(a?'#2f3350':'#2b2f4a');
@@ -1487,6 +1527,7 @@ const SP={up:(x,y)=>setT(x,y,22),dn:(x,y)=>setT(x,y,23),el:(x,y)=>setT(x,y,24)};
 const hallT=(x0,y0,x1,y1,dx,dy,v)=>{frameT(x0,y0,x1,y1,1);fillT(x0+1,y0+1,x1-1,y1-1,v);setT(dx,dy,v)};
 const planeT=(cx,cy,v)=>{fillT(cx,cy-2,cx,cy+2,v);fillT(cx-2,cy-1,cx+2,cy-1,v);fillT(cx-1,cy+2,cx+1,cy+2,v)};
 const MMC={0:'#2f3350',1:'#14131f',2:'#b07a4c',3:'#a06bff',4:'#7d5cc0',5:'#2e9a4a',6:'#a05cd0',7:'#4a90d9',8:'#9a3b49',9:'#5a3a1f',10:'#3f7a45',11:'#6b4228',12:'#dddddd',13:'#1f6b34',14:'#82828c',15:'#835735',16:'#ffffff',17:'#2aa89f',18:'#4a3470',19:'#7fd8ff',20:'#222222',21:'#39c5bb',22:'#ffcf4a',23:'#ffcf4a',24:'#ffffff'};
+Object.assign(MMC,{25:'#1f6b34',26:'#175a2c',27:'#2e8a4a',28:'#d96aa7',29:'#e0527a',30:'#e6b422',31:'#cfd6e6',32:'#cfd6e6',33:'#cfd6e6'});
 function miniMapPic(){
  const Z=6,c=document.createElement('canvas');c.width=W*Z;c.height=H*Z;const x=c.getContext('2d');
  for(let j=0;j<H;j++)for(let i=0;i<W;i++){x.fillStyle=MMC[map[idx(i,j)]]||'#000';x.fillRect(i*Z,j*Z,Z,Z)}
@@ -1611,7 +1652,7 @@ const MULTI={
   const polyT=(p,v,tr)=>{const q=p.map(a=>tr(a[0],a[1]));for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(inP(x+.5,y+.5,q))setT(x,y,v)};
   const lineT=(p,v,tr)=>{const q=p.map(a=>tr(a[0],a[1]));for(let i=0;i<q.length-1;i++){const a=q[i],b=q[i+1],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])*2)+1;for(let k=0;k<=n;k++){const x=Math.floor(a[0]+(b[0]-a[0])*k/n),y=Math.floor(a[1]+(b[1]-a[1])*k/n);setT(x,y,v);setT(x+1,y,v);setT(x,y+1,v)}}};
   const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
-  const near=(x,y)=>{const bl=(a,b)=>!inb(a,b)||BLOCK.has(map[idx(a,b)])||STAIRT.has(map[idx(a,b)])||objs.some(o=>o.x===a&&o.y===b);x=Math.floor(x);y=Math.floor(y);for(let r=0;r<=5;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bl(x+dx,y+dy))return [x+dx,y+dy];return [x,y]};
+  const near=(x,y)=>{const stN=(a,b)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)if(inb(a+i,b+j)&&STAIRT.has(map[idx(a+i,b+j)]))return true;return false};const bl=(a,b)=>!inb(a,b)||stN(a,b)||BLOCK.has(map[idx(a,b)])||STAIRT.has(map[idx(a,b)])||objs.some(o=>o.x===a&&o.y===b);x=Math.floor(x);y=Math.floor(y);for(let r=0;r<=5;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bl(x+dx,y+dy))return [x+dx,y+dy];return [x,y]};
   const put=(tr,px,py,type,text,d,src)=>{const g=tr(px,py),p=near(g[0],g[1]);addO(type,p[0],p[1],text,d,src)};
   const pk=(x,y)=>[(x-300)/25,1+(y-430)/42];   /* 園區導覽圖 → grid */
   const fl=(x,y)=>[(x-70)/28.5,(y-555)/28.5];   /* 1F 平面圖 → grid */
@@ -1704,7 +1745,7 @@ const MULTI={
    polyT(rect(560,1000,670,1100),14,fl);                                                                 /* A 斜陽角 */
    polyT(rect(200,1075,270,1150),17,fl);polyT([[90,1160],[260,1150],[260,1195],[90,1185]],17,fl);        /* 入口與往至美橋通道 */
    setT(...fl(610,1050).map(Math.floor),16);
-   SP.dn(1,21);SP.dn(2,21);SP.up(22,17);SP.up(23,17);SP.el(8,16);SP.el(22,15);
+   fillT(1,21,6,22,17);SP.dn(1,21);SP.dn(1,22);SP.up(22,17);SP.up(23,17);SP.el(8,16);SP.el(22,15);
    put(fl,430,890,'note','S101 特展（粉紅色區域）：展覽內容請以官方網站為準。');
    put(fl,452,975,'note','S102 嘉義文史。');
    put(fl,610,1060,'note','Ⓐ 斜陽角（圖上有一把大傘的休憩空間）。');
@@ -1763,7 +1804,7 @@ const MULTI={
   const inP=(x,y,p)=>{let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i],b=p[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
   const polyT=(p,v,tr)=>{const q=p.map(a=>tr(a[0],a[1]));for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(inP(x+.5,y+.5,q))setT(x,y,v)};
   const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
-  const near=(x,y)=>{const bl=(a,b)=>!inb(a,b)||BLOCK.has(map[idx(a,b)])||STAIRT.has(map[idx(a,b)])||objs.some(o=>o.x===a&&o.y===b);x=Math.floor(x);y=Math.floor(y);for(let r=0;r<=6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bl(x+dx,y+dy))return [x+dx,y+dy];return [x,y]};
+  const near=(x,y)=>{const stN=(a,b)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)if(inb(a+i,b+j)&&STAIRT.has(map[idx(a+i,b+j)]))return true;return false};const bl=(a,b)=>!inb(a,b)||stN(a,b)||BLOCK.has(map[idx(a,b)])||STAIRT.has(map[idx(a,b)])||objs.some(o=>o.x===a&&o.y===b);x=Math.floor(x);y=Math.floor(y);for(let r=0;r<=6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bl(x+dx,y+dy))return [x+dx,y+dy];return [x,y]};
   const put=(type,x,y,text,d,src)=>{const p=near(x,y);addO(type,p[0],p[1],text,d,src)};
   const g1=(x,y)=>[x/35.3,y/33.8];        /* 1F 樓層圖（1410×880）→ grid */
   const g2=(x,y)=>[x/29.5,(y-10)/20];     /* 2F 樓層圖（1180×530）→ grid */
@@ -1810,7 +1851,7 @@ const MULTI={
    polyT([[90,125],[200,100],[290,92],[900,92],[1010,105],[1100,160],[1170,260],[1120,310],[90,310],[10,260]],14,g2); /* 懸掛展示區地面 */
    [[6,9],[11,7],[17,6],[23,7],[29,6],[34,9],[10,12],[18,11],[25,12],[32,12]].forEach(([x,y])=>planeT(x,y,18));       /* 懸吊軍機的投影 */
    hallT(13,1,20,4,16,4,18);hallT(20,1,27,4,24,4,18);                          /* 武器裝備區、發動機區（圖上紫色） */
-   hallT(8,1,13,4,10,4,17);hallT(27,1,33,4,30,4,17);                           /* 上方兩側：樓梯、廁所 */
+   hallT(8,1,13,4,10,4,17);hallT(27,1,33,4,29,4,17);                           /* 上方兩側：樓梯、廁所 */
    hallT(2,15,8,19,5,15,17);hallT(31,15,37,19,34,15,17);                       /* 下方兩側：樓梯、廁所 */
    hallT(8,15,13,19,10,15,15);                                                 /* 圖書文獻室（橘色） */
    hallT(13,15,17,19,15,15,10);                                                /* 多媒體劇場（綠色） */
@@ -1827,7 +1868,7 @@ const MULTI={
    put('note',19,16,'服務台（圖上以藍色標示，位於入口正前方）。');
    put('bell',18,16);
    put('note',24,17,'這間房間在圖上沒有標示名稱。');put('note',29,17,'這間房間在圖上沒有標示名稱。');
-   put('note',9,3,'樓梯（左上）：往 1F。');put('note',12,3,'廁所（左上）。');put('note',30,4,'樓梯（右上）：往 1F。');put('note',28,3,'廁所（右上）。');
+   put('note',9,3,'樓梯（左上）：往 1F。');put('note',12,3,'廁所（左上）。');put('note',32,2,'樓梯（右上）：往 1F。');put('note',28,3,'廁所（右上）。');
    put('note',4,19,'樓梯（左下）：往 1F。');put('note',7,18,'廁所（左下）。');put('note',35,19,'樓梯（右下）：往 1F。');put('note',32,18,'廁所（右下）。');
    put('note',19,23,'入口。館方資訊：開放時間與票價請以官方網站為準。');
    put('link',20,23,'https://www.aeeh.com.tw/');
