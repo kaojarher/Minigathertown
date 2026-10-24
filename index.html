@@ -240,7 +240,7 @@ body.meet #vids .v{width:auto;height:100%!important}
   <div id="bar">
    <button id="tourBtn">🧭 導覽</button><button id="mic">麥克風 開</button><button id="cam">鏡頭 關</button><button id="shr">分享螢幕</button><button id="fbtn">傳送檔案</button><input type="file" id="ffile" hidden>
    <details id="mapTools" open><summary>地圖工具（編輯／匯出入／範本）</summary><div class="mt"><button id="ed">編輯地圖</button>
-   <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區導覽圖＋1F 依官方圖，2F/3F 示意）</option><option value="avi">✈ 航空教育展示館（1F、2F 依官方樓層圖）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
+   <button id="mexp">匯出地圖</button><button id="mimp">匯入地圖</button><button id="msv">存到瀏覽器</button><button id="mld">讀取存檔</button><button id="mrs">預設地圖</button><select id="tpl" style="width:auto"><option value="office">辦公室</option><option value="clinic">🏥 診所</option><option value="cafe">咖啡廳</option><option value="classroom">教室</option><option value="park">公園</option><option value="library">圖書館</option><option value="hall">演講廳</option><option value="living">客廳</option><option value="market">市集</option><option value="arcade">遊戲室</option><option value="miku">初音博物館（粉絲自製）</option><option value="building">🏢 四層辦公大樓（多樓層）</option><option value="expo">🏛 多展廳展覽館（多樓層）</option><option value="khm">🏛 高雄市立歷史博物館（2 層・示意）</option><option value="npms">🏛 故宮南院（園區導覽圖＋1F 依官方圖，2F/3F 示意）</option><option value="avi">✈ 航空教育展示館（1F、2F 依官方樓層圖）</option><option value="empty">空白房間</option></select><button id="tplGo">套用範本</button><input type="file" id="mfile" accept=".json,application/json" hidden>
    <span id="tools"></span></div></details>
    <span id="status">連線中…</span>
   </div>
@@ -279,6 +279,13 @@ const setT=(x,y,v)=>{if(inb(x,y))map[idx(x,y)]=v};
 const fillT=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)setT(x,y,v)};
 const frameT=(x0,y0,x1,y1,v)=>{for(let x=x0;x<=x1;x++){setT(x,y0,v);setT(x,y1,v)}for(let y=y0;y<=y1;y++){setT(x0,y,v);setT(x1,y,v)}};
 const roomT=(x0,y0,x1,y1,dx,dy)=>{frameT(x0,y0,x1,y1,1);fillT(x0+1,y0+1,x1-1,y1-1,4);setT(dx,dy,0)};
+function npcPut(x,y,name,lines,k){
+ const ST=[3,22,23,24];
+ const stN=(a,b)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)if(inb(a+i,b+j)&&ST.includes(map[idx(a+i,b+j)]))return true;return false};
+ const bad=(a,b)=>a<1||b<1||a>W-2||b>H-2||BLOCK.has(map[idx(a,b)])||stN(a,b)||objs.some(o=>o.x===a&&o.y===b);
+ x=Math.floor(x);y=Math.floor(y);
+ for(let r=0;r<=8;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bad(x+dx,y+dy)){addO('npc',x+dx,y+dy,lines,{n:name,k:(k||0)%8});return}
+}
 function addO(type,x,y,text,d,src){objs.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),type,x,y,text:String(text||'').slice(0,type==='slides'?2000:500),strokes:[],d:d||{},src:src||'',_al:true})}
 const TEMPLATES={
  office(){
@@ -383,8 +390,45 @@ const TEMPLATES={
   setT(14,24,3);setT(26,24,3);
   calcReg();
  },
+ clinic(){
+  map.fill(17);frameT(0,0,W-1,H-1,1);setT(0,12,15);setT(0,13,15);
+  fillT(2,3,9,8,8);fillT(2,2,9,2,6);fillT(2,9,9,9,6);
+  fillT(14,6,24,6,2);setT(16,6,11);setT(22,6,11);
+  fillT(28,1,38,1,9);fillT(28,4,36,4,2);
+  roomT(2,15,10,23,6,15);roomT(12,15,20,23,16,15);roomT(22,15,30,23,26,15);roomT(32,15,38,23,35,15);
+  [[4,17],[14,17],[24,17]].forEach(([x,y])=>{fillT(x,y,x+2,y,2);setT(x+1,y,11)});
+  fillT(8,17,8,21,6);fillT(18,17,18,21,6);fillT(28,17,28,21,6);
+  fillT(33,16,34,16,19);fillT(36,16,37,16,19);fillT(36,18,36,21,6);
+  [[1,1],[12,1],[12,10],[26,10],[38,10],[1,24],[11,24],[31,24],[38,24]].forEach(([x,y])=>setT(x,y,5));
+  addO('bell',19,7);addO('pick',16,8);
+  addO('note',22,8,'掛號流程：先到櫃台按鈴掛號，再用左邊的取號機抽號碼牌，坐在候診區等叫號。');
+  addO('note',14,9,'診所守則：請配戴口罩、保持安靜。紫色診間是私人區，只有裡面的人聽得到。');
+  addO('book',10,4,'候診登記簿');addO('music',10,7,'',{s:1,on:false});
+  addO('note',29,3,'藥局：領藥請在窗口前排隊，領藥前請核對姓名與藥袋。');
+  addO('audio',21,12,'歡迎來到示範診所。左上是候診區，上方中間是掛號櫃台，右上是藥局。下排由左到右是內科、小兒科、家醫科三間診間，以及檢驗室。本場景是示意，不提供真實醫療建議。');
+  addO('board',26,12);addO('slides',29,12,'衛教小教室||勤洗手，是預防感染最簡單的方法||咳嗽時請用手肘或衣袖遮住口鼻||規律作息與適度運動，有助維持健康||（示意內容，實際醫療問題請諮詢醫護人員）',{i:0});
+  addO('poll',32,12,'今天候診的感覺如何？',{o:['很順暢','還可以','等太久'],v:{}});
+  addO('link',35,12,'https://www.mohw.gov.tw/');
+  addO('note',34,22,'檢驗室：抽血與檢查都在這裡進行。');
+  calcReg();
+ },
  empty(){map.fill(0);frameT(0,0,W-1,H-1,1);calcReg()}
 };
+/* ---------- 範本 NPC（統一紅色衣服）[x,y,名字,對話,造型] ---------- */
+const NPCDATA={
+ office:[[22,5,'接待','歡迎光臨！請問找哪位同事？||訪客請先到這裡登記。||右上角紫色房間是會議室。',0],[10,13,'同事','早安！今天的會議是下午兩點。||需要討論的話，可以去右上角的會議室。',1],[32,5,'主管','會議室是私人區，只有裡面的人聽得到彼此。||有問題隨時找我討論。',5],[22,20,'IT 支援','電腦或網路有問題嗎？||重新開機通常能解決一半的問題。',3]],
+ clinic:[[19,5,'護理師','您好，請問今天掛哪一科？||初診請準備健保卡，並到取號機抽號碼牌。||叫到號碼時，請到對應的診間。',0],[5,19,'林醫師','我是內科醫師。哪裡不舒服呢？||最近睡得好嗎？規律作息很重要。||（示意對話，實際醫療問題請諮詢醫護人員）',1],[15,19,'陳醫師','我是小朋友的醫師，別緊張。||發燒時多補充水分，持續不退再回診。||（示意對話，不提供真實醫療建議）',4],[25,19,'王醫師','我是家醫科醫師。平常有在量血壓嗎？||建議每年做一次健康檢查。||（示意對話，不提供真實醫療建議）',5],[32,3,'藥師','請在窗口等候，領藥前請核對姓名。||藥袋上有用法，有疑問隨時問我。',2],[34,20,'檢驗師','抽血前請依醫師指示決定是否空腹。||檢查很快就好，放輕鬆。',3],[4,6,'阿嬤','我來拿慢性病的藥啦。||這裡的護理師人很好，等待也不會無聊。',6],[24,9,'導診志工','需要幫忙嗎？掛號櫃台在上面，藥局在右上角。||診間在下面一排，門在上方。',7]],
+ cafe:[[6,2,'咖啡師','歡迎光臨！今天推薦手沖單品。||右邊的書櫃可以隨意翻閱。',0],[15,10,'服務生','請問幾位？桌子都可以坐。||右下角紫色區域是安靜的包廂。',1],[23,6,'客人','這裡的氣氛真好，很適合聊天。||我常常在地毯區看書。',4],[33,19,'店長','包廂是私人區，只有裡面的人聽得到。||需要開會或討論歡迎使用。',5]],
+ classroom:[[19,5,'老師','同學們請就座，我們準備上課。||有問題可以舉手發問。',0],[10,9,'學生','老師今天會點名嗎？||我昨天的作業寫完了。',1],[16,13,'學生','這個位子視野最好。||下課後要不要一起去討論？',7],[34,19,'助教','討論室是私人區，適合小組討論。||需要協助請隨時叫我。',2]],
+ park:[[27,11,'冰品攤販','夏天就是要吃冰！||池塘旁邊的長椅很涼快。',5],[8,9,'慢跑者','今天天氣真好，適合跑步。||沿著石板路跑一圈剛剛好。',1],[22,9,'園區導覽','歡迎來到公園！中央有池塘，左下角紫色區域是私人聊天區。',0],[6,18,'野餐媽媽','我們在這裡野餐，位子很舒服。||紫色區域只有裡面的人聽得到。',4]],
+ library:[[18,4,'圖書館員','請小聲交談，謝謝。||需要找書可以問我。',0],[25,8,'讀者','這本書真好看。||我常常坐在這張桌子讀書。',7],[10,9,'讀者','書架之間很安靜，很適合找書。',1],[33,19,'閱覽室管理員','這裡是靜音閱覽室，也是私人區。||需要討論請在這裡進行。',2]],
+ hall:[[20,5,'主持人','歡迎各位蒞臨！活動即將開始。||簡報會讓大家同步翻頁，講完可以用投票收集意見。',0],[20,10,'引導員','請往前面的座位就座。||左下角紫色房間是休息區。',3],[6,19,'音控人員','麥克風與音響都測試好了。||需要調整音量請告訴我。',1],[34,6,'場務','計時器在右上角，講者請注意時間。',7]],
+ living:[[20,5,'主人','歡迎來我家玩！想玩遊戲就靠近下面的物件按 X。||沙發隨便坐。',5],[11,12,'小朋友','我們來玩猜拳好不好？',6],[28,22,'鄰居','我是來串門子的。||這裡的音樂很好聽。',4],[34,18,'管家','這間是私人談話室，只有裡面的人聽得到。||需要什麼請吩咐。',1]],
+ market:[[5,8,'水果販','新鮮水果！便宜賣！||今天的西瓜特別甜。',0],[23,8,'點心販','剛出爐的點心，快來嚐嚐。',4],[11,19,'玩具販','小朋友最愛的玩具都在這裡。',1],[35,19,'飾品販','手工飾品，每一件都獨一無二。',6],[13,15,'逛街客','這個市集真熱鬧。||我想買點東西帶回家。',2]],
+ arcade:[[20,5,'店員','歡迎來到遊戲室！靠近物件按 X 就能玩。||右下角紫色區域是私人包廂。',3],[10,12,'玩家','我剛剛連贏了三場！||要不要來一局五子棋？',1],[30,12,'玩家','猜拳我從來沒輸過。||來挑戰看看吧。',7],[33,19,'管理員','包廂只有裡面的人聽得到彼此。',5]],
+ miku:[[20,5,'導覽員','歡迎來到初音博物館（粉絲自製示範場景，非官方）。||中間的簡報介紹了她的歷史。',0],[12,10,'志工','展示櫃裡有許多介紹文字，靠近按 X 閱讀。',4],[20,16,'館員','右邊舞台可以用音樂盒播放曲子。',2],[33,19,'體驗區管理員','這間是私人區，適合小組聊天。||互動體驗區在左下角。',1]]
+};
+Object.keys(NPCDATA).forEach(k=>{const f=TEMPLATES[k];TEMPLATES[k]=function(){f();NPCDATA[k].forEach(a=>npcPut(...a))}});
 function defaultMap(){TEMPLATES.office()}
 function calcReg(){
  reg.fill(0);let id=0;
@@ -396,13 +440,12 @@ function calcReg(){
     if(inb(nx,ny)&&map[idx(nx,ny)]===4&&!reg[idx(nx,ny)]){reg[idx(nx,ny)]=id;q.push(idx(nx,ny))}}}
  }
 }
-defaultMap();
 
 /* ---------- state ---------- */
 const $=id=>document.getElementById(id);
 const me={x:6,y:6,name:'',color:'#e8504f',em:'',emT:0,chat:'',chatT:0,sk:0,f:1,url:null,img:null,lpc:false,d:2,mt:0};
 const peers={};let peer,myId,isHost=false,stream,room,hostId;
-let objs=[],follow=null,locate=null,shareStream=null,plSig='',fileTarget=null,openBoard=null,curObj=null,modalTimer=0,lastChime=0;const shareCalls={};
+let objs=[],follow=null,locate=null,shareStream=null,plSig='',fileTarget=null,openBoard=null,curObj=null,modalTimer=0,lastChime=0;const shareCalls={};defaultMap();
 var TOUR=null;const bc=m=>{if(TOUR){const o=m.t==='ost'&&objs.find(q=>q.id===m.id);TOUR.act=o?o.type:m.t;return}if(m.fl==null)m.fl=curFl;Object.values(peers).forEach(p=>p.conn&&p.conn.open&&p.conn.send(m))};
 const status=t=>$('status').textContent=t;
 function logMsg(html){if(window.dockNote)dockNote();const l=$('log');l.insertAdjacentHTML('beforeend','<div>'+html+'</div>');l.scrollTop=l.scrollHeight}
@@ -578,7 +621,7 @@ TILE_NAMES.slice(0,25).forEach((n,i)=>{const b=document.createElement('button');
 ['樹','花','飛機'].forEach(cat=>{const lb=document.createElement('span');lb.className='tl';lb.textContent=cat;grp.d.append(lb);
  DECO.filter(d=>d[4]===cat).forEach(d=>{const b=document.createElement('button');b.textContent=d[1]+' '+d[2];b.title=d[2]+(d[3]?'（擋路）':'（可穿越）');b.dataset.v=String(d[0]);
   b.onclick=()=>{brush=d[0];toolSel(String(d[0]))};grp.d.append(b)})});
-[['o:note','便條'],['o:link','連結'],['o:board','白板'],['o:dice','骰子'],['o:poll','投票'],['o:timer','計時器'],['o:book','留言板'],['o:ttt','井字遊戲'],['o:pick','抽籤'],['o:video','影片'],['o:bell','門鈴'],['o:gomoku','五子棋'],['o:rps','猜拳'],['o:music','音樂盒'],['o:slides','簡報'],['o:img','圖片'],['o:audio','語音'],['o:del','移除物件']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=v;b.onclick=()=>{brush=v;toolSel(v)};grp.o.append(b)});
+[['o:note','便條'],['o:link','連結'],['o:board','白板'],['o:dice','骰子'],['o:poll','投票'],['o:timer','計時器'],['o:book','留言板'],['o:ttt','井字遊戲'],['o:pick','抽籤'],['o:video','影片'],['o:bell','門鈴'],['o:gomoku','五子棋'],['o:rps','猜拳'],['o:music','音樂盒'],['o:slides','簡報'],['o:img','圖片'],['o:audio','語音'],['o:npc','NPC'],['o:del','移除物件']].forEach(([v,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.v=v;b.onclick=()=>{brush=v;toolSel(v)};grp.o.append(b)});
 showGrp('t');toolSel('1');
 $('ed').onclick=()=>{editing=!editing;$('ed').classList.toggle('on',editing);$('tools').classList.toggle('show',editing);
  if(editing)logMsg('<i>編輯中：點擊或拖曳地圖即可放置，所有人會同步看到</i>')};
@@ -821,7 +864,7 @@ $('mfile').onchange=async e=>{
 };
 $('msv').onclick=()=>{try{localStorage.setItem(MAPKEY,JSON.stringify(Array.from(map)));localStorage.setItem('minigather-floors',JSON.stringify(packFloors()));logMsg('<i>已把地圖存到這個瀏覽器</i>')}catch(e){logMsg('<i>這個環境不允許瀏覽器儲存，請改用匯出地圖</i>')}};
 $('mld').onclick=()=>{try{const fl=JSON.parse(localStorage.getItem('minigather-floors')||'null');if(Array.isArray(fl)&&applyFloors(fl,true)){logMsg('<i>已讀取存檔（含樓層與物件），所有人都會同步</i>');return}const a=JSON.parse(localStorage.getItem(MAPKEY));logMsg(applyMap(a,true)?'<i>已讀取存檔，所有人都會同步</i>':'<i>還沒有存檔</i>')}catch(e){logMsg('<i>還沒有存檔</i>')}};
-$('mrs').onclick=()=>{if(confirm('要把地圖還原成預設嗎？（會回到單一樓層）')){const f0={n:'1F',m:new Uint8Array(W*H),o:[]};floors.length=0;floors.push(f0);loadInto(0);me.fl=0;defaultMap();objs=[];saveCur();bc({t:'floors',f:packFloors()});ensureFree();renderFloors();updateAV()}};
+$('mrs').onclick=()=>{if(confirm('要把地圖還原成預設嗎？（會回到單一樓層）')){const f0={n:'1F',m:new Uint8Array(W*H),o:[]};floors.length=0;floors.push(f0);loadInto(0);me.fl=0;objs=[];defaultMap();saveCur();bc({t:'floors',f:packFloors()});ensureFree();renderFloors();updateAV()}};
 
 function frame(){
  ctx.setTransform(S,0,0,S,0,0);ctx.imageSmoothingEnabled=false;
@@ -831,7 +874,7 @@ function frame(){
   ctx.beginPath();ctx.arc(me.x*T+8,me.y*T+8,effR()*T,0,7);ctx.stroke();ctx.setLineDash([]);
  }
  if(dest&&path&&path.length){ctx.strokeStyle='#ffcf4a';ctx.lineWidth=1;ctx.strokeRect(dest[0]*T+2,dest[1]*T+2,12,12)}
- objs.forEach(drawObj);
+ if(lpcOK)objs.forEach(drawObj);   /* 腳本載入完成後才畫物件（避免初始化順序問題） */
  const all=[...(TOUR?(TOUR.npc.fl===curFl?[TOUR.npc]:[]):Object.values(peers).filter(p=>(p.fl|0)===curFl)),me].sort((a,b)=>a.y-b.y);
  all.forEach(p=>{if(p===me||p.name)drawChar(p,p===me,ctx)});
  if(locate&&locate.until>Date.now()){const q=peers[locate.id];if(q&&(q.fl|0)===curFl){ctx.strokeStyle='#ff5a7a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q.x*T+8,q.y*T+8,8+(Date.now()/80)%8,0,7);ctx.stroke()}}
@@ -921,7 +964,7 @@ setInterval(()=>{
 PRESETS.forEach((g,i)=>lpcBuild(g).then(c=>{presetCv[i]=c;refreshSkins()}).catch(()=>{}));
 applyPreset(0);
 /* ---------- objects, screen share, participants, files ---------- */
-const OTYPES=['note','link','board','dice','poll','timer','book','ttt','pick','video','bell','gomoku','rps','music','slides','img','audio'];
+const OTYPES=['note','link','board','dice','poll','timer','book','ttt','pick','video','bell','gomoku','rps','music','slides','img','audio','npc'];
 function cleanD(d){try{return d&&typeof d==='object'&&!Array.isArray(d)&&JSON.stringify(d).length<6000?JSON.parse(JSON.stringify(d)):{}}catch(e){return{}}}
 const objAt=(x,y)=>objs.find(o=>o.x===x&&o.y===y);
 const near=o=>Math.hypot(me.x-o.x,me.y-o.y)<=1.8;
@@ -936,6 +979,7 @@ function drawObj(o){
  if(o.type==='note'){c.fillStyle='#ffe97a';c.fillRect(px+3,py+2,10,12);c.fillStyle='#c9a400';c.fillRect(px+5,py+5,6,1);c.fillRect(px+5,py+8,6,1);c.fillRect(px+5,py+11,4,1)}
  else if(o.type==='link'){c.fillStyle='#1d5fa8';c.fillRect(px+2,py+2,12,12);c.fillStyle='#4aa3f0';c.fillRect(px+3,py+3,10,10);c.fillStyle='#fff';c.fillRect(px+7,py+3,2,10);c.fillRect(px+3,py+7,10,2)}
  else if(o.type==='board'){c.fillStyle='#555';c.fillRect(px,py+1,T,13);c.fillStyle='#fff';c.fillRect(px+1,py+2,14,11);c.fillStyle='#d02020';c.fillRect(px+3,py+9,4,1);c.fillRect(px+6,py+6,4,1);c.fillStyle='#2050d0';c.fillRect(px+9,py+4,3,1)}
+ else if(o.type==='npc')drawNpc(o);
  else drawObj2(o,px,py,c);
  if(near(o)){c.strokeStyle='#ffcf4a';c.lineWidth=1;c.strokeRect(px+.5,py+.5,15,15);c.font='7px DotGothic16,sans-serif';c.textAlign='center';c.fillStyle='#ffcf4a';c.fillText('按 X',px+8,py-2)}
 }
@@ -947,6 +991,7 @@ function objTool(v,x,y){
  if(type==='note'){text=prompt('便條內容（最多 500 字）');if(text===null)return}
  if(type==='link'){text=prompt('請輸入網址（需以 http:// 或 https:// 開頭）');if(text===null)return;text=text.trim();if(!/^https?:\/\//i.test(text)){logMsg('<i>網址格式不正確</i>');return}}
  let d={},src='';
+ if(type==='npc'){const nm=prompt('NPC 名字（最多 8 字）','護理師');if(nm===null)return;text=prompt('NPC 對話（多句用 || 分隔，最多 500 字）','歡迎光臨！||有什麼需要幫忙的嗎？');if(text===null)return;d={n:nm.trim().slice(0,8)||'NPC',k:rnd(8)}}
  if(type==='poll'){text=prompt('投票問題');if(text===null)return;const op=prompt('選項（用逗號分隔，2 到 5 個）');if(op===null)return;const ol=op.split(/[,，]/).map(x=>x.trim().slice(0,30)).filter(Boolean).slice(0,5);if(ol.length<2){logMsg('<i>至少要有 2 個選項</i>');return}d={o:ol,v:{}}}
  if(type==='slides'){text=prompt('每頁內容用 || 分隔（最多 2000 字）');if(text===null)return}
  if(type==='video'){text=prompt('請輸入 YouTube 影片網址');if(text===null)return;text=text.trim();if(!ytId(text)){logMsg('<i>不是有效的 YouTube 網址</i>');return}}
@@ -1260,6 +1305,38 @@ function drawObj2(o,px,py,c){
  else if(t==='audio'){c.fillStyle='#ff6fa8';R(2,6,4,4);R(6,4,3,8);c.fillStyle='#fff';R(11,6,1,4);R(13,4,1,8);if(o.src){c.fillStyle='#ffcf4a';R(1,13,14,1)}}
  else if(t==='slides'){c.fillStyle='#ddd';R(1,2,14,9);c.fillStyle='#2050d0';R(2,3,12,7);c.fillStyle='#fff';R(4,5,6,1);R(4,7,4,1);c.fillStyle='#555';R(7,11,2,3);R(4,14,8,1)}
 }
+/* ---------- NPC：統一紅色衣服，屬於物件，會跟著地圖一起存檔與同步 ---------- */
+var NPC_IMG={},NPC_REQ={},lpcOK=false;
+var NPCSK=[
+ {B:'female',skin:'light',hair:'long',hairC:'black',top:'longsleeve',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
+ {B:'male',skin:'amber',hair:'buzzcut',hairC:'black',top:'tshirt',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
+ {B:'female',skin:'olive',hair:'bob',hairC:'dark_brown',top:'tshirt',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
+ {B:'male',skin:'light',hair:'messy1',hairC:'blonde',top:'longsleeve',topC:'red',leg:'pants',legC:'black',foot:'boots',footC:'black'},
+ {B:'female',skin:'brown',hair:'curly_short',hairC:'black',top:'tshirt',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
+ {B:'male',skin:'bronze',hair:'bob',hairC:'dark_brown',top:'tshirt',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
+ {B:'female',skin:'taupe',hair:'messy1',hairC:'gray',top:'longsleeve',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
+ {B:'male',skin:'brown',hair:'curly_short',hairC:'gray',top:'longsleeve',topC:'red',leg:'pants',legC:'black',foot:'boots',footC:'black'}
+];
+function npcImg(k){
+ if(!lpcOK)return null;
+ if(NPC_IMG[k])return NPC_IMG[k];
+ if(!NPC_REQ[k]){NPC_REQ[k]=1;
+  lpcBuild(NPCSK[k]).then(c=>{const im=new Image();im.onload=()=>{NPC_IMG[k]=im};im.src=c.toDataURL('image/png')}).catch(()=>{});}
+ return null;
+}
+function drawNpc(o){
+ const k=((o.d&&o.d.k)|0)%8,im=npcImg(k),dx=me.x-o.x,dy=me.y-o.y;
+ let d=2;if(Math.hypot(dx,dy)<=4)d=Math.abs(dx)>Math.abs(dy)?(dx<0?1:3):(dy<0?0:2);
+ drawChar({x:o.x,y:o.y,name:String((o.d&&o.d.n)||'NPC').slice(0,8),color:'#d02020',sk:k,f:1,d,mt:0,lpc:!!im,img:im||null},false,ctx);
+}
+Object.assign(UIS,{
+ npc(o){
+  const out=document.createElement('pre');let i=0;
+  const ls=()=>String(o.text||'').split('||').map(x=>x.trim()).filter(Boolean).slice(0,20);
+  const r=()=>{const l=ls();out.textContent=String((o.d&&o.d.n)||'NPC').slice(0,8)+'：\n'+(l.length?l[i%l.length]:'……')};
+  return{els:[out,mkBtn('下一句',()=>{i++;r()})],render:r};
+ }
+});
 /* screen share: only people in range (or the same private room) receive it */
 function showScreen(call){
  const d=document.createElement('div');d.className='scr';
@@ -1515,10 +1592,29 @@ $('fdel').onclick=()=>{
  doDelTop();bc({t:'fdel'});
 };
 /* build several floors with the same helpers the single-floor templates use */
+var curTpl='';
+const FLNPC={
+ 'building|1F 大廳':[[19,5,'接待','歡迎光臨！右上角的樓梯與電梯可前往其他樓層。',0],[36,8,'保全','請在大廳登記。||需要上樓請搭電梯或走樓梯。',1],[14,11,'訪客','我在等朋友下來。',4]],
+ 'building|2F 辦公室':[[6,7,'同事','這層是辦公室，右側兩間會議室是私人區。',5],[26,12,'主管','會議室裡只有裡面的人聽得到。',2]],
+ 'building|3F 活動廳':[[20,6,'主持人','歡迎來到活動廳！簡報會讓所有人同步翻頁。',0],[20,13,'工作人員','請就座，活動即將開始。',3]],
+ 'building|4F 屋頂花園':[[12,9,'園丁','屋頂花園的花都是我照顧的。',1],[21,9,'咖啡推車','來杯咖啡休息一下吧。',6]],
+ 'khm|1F 大廳':[[19,5,'櫃台志工','歡迎參觀！（示意場景，請以官方資訊為準）||館方資訊在中間的便條與連結。',0],[8,9,'解說員','這個展區帶你從老照片認識高雄。',1],[7,20,'兒童展志工','小朋友可以在這裡玩遊戲。',4]],
+ 'khm|2F 常設展':[[19,6,'導覽員','二樓是常設展，有水系、海港、鐵道與數字高雄。||（示意內容，請以實際展覽為準）',5],[8,8,'解說員','靠近物件按 X 可以閱讀展覽介紹。',2]],
+ 'npms|園區導覽圖':[[18,20,'遊客中心志工','歡迎來到園區！這是依官方導覽圖整理的示意場景。||1 館在湖的西側，可從至美橋過去。',0],[18,3,'園區保全','北大門在這裡。請沿著步道參觀。',1],[26,15,'園區導覽員','環湖步道很適合散步。',5]],
+ 'npms|1F 大廳':[[12,15,'服務台志工','需要協助請告訴我。||往 2F 請走右下角的樓梯。',4],[27,12,'兒童導覽員','兒童創意中心就在這裡。（依現場為準）',6],[19,13,'大廳保全','請保持安靜，謝謝合作。',1]],
+ 'npms|2F 展廳':[[7,8,'展廳解說員','這層是示意展廳，實際內容請以官方導覽圖為準。',0],[31,8,'導覽員','故宮南院以亞洲藝術文化為主軸。',2]],
+ 'npms|3F 展廳':[[7,8,'展廳解說員','三樓有 302、303 等展廳（示意）。',4],[30,8,'導覽員','展品請替換成實際內容。',3]],
+ 'avi|1F 地面展示區':[[12,10,'導覽員','歡迎來到航空教育展示館！這層是地面展示區。||四個角落有樓梯，可以上二樓看懸吊的飛機。',0],[29,14,'地勤解說員','靠近展品按 X 看說明。',1],[20,17,'特展志工','主題特展內容請以官方網站為準。',7]],
+ 'avi|2F 懸吊展示區':[[20,9,'導覽員','二樓的軍機從天花板懸吊下來，地上的剪影是它的投影。',0],[20,13,'館員','服務台在入口正前方。',3]],
+ 'expo|入口大廳':[[19,5,'接待','歡迎來到示範展覽館！電梯可直達各展廳。',0],[12,14,'導覽員','A 廳是藝術，B 廳是科技，C 廳是自然。',5]],
+ 'expo|A 廳 藝術':[[20,9,'策展人','這些是示範展品，請換成你自己的作品。',4]],
+ 'expo|B 廳 科技':[[20,12,'技術員','互動體驗區靠近物件按 X。',1]],
+ 'expo|C 廳 自然':[[12,10,'園藝解說','這裡是戶外風格的展廳。',6]]
+};
 function makeFloors(defs){
  const list=defs.map(()=>({n:'',m:new Uint8Array(W*H),o:[]}));
  floors.length=0;list.forEach(f=>floors.push(f));
- defs.forEach((d,i)=>{loadInto(i);map.fill(0);objs=floors[i].o=[];d.f();calcReg();saveCur();floors[i].n=d.n});
+ defs.forEach((d,i)=>{loadInto(i);map.fill(0);objs=floors[i].o=[];d.f();calcReg();(FLNPC[curTpl+'|'+d.n]||[]).forEach(a=>npcPut(...a));saveCur();floors[i].n=d.n});
  loadInto(0);me.fl=0;path=null;dest=null;
  bc({t:'floors',f:packFloors()});ensureFree();renderFloors();plSig='';updateAV();
 }
@@ -1920,6 +2016,7 @@ const MULTI={
   }}
  ])}
 };
+Object.keys(MULTI).forEach(k=>{const f=MULTI[k];MULTI[k]=function(){curTpl=k;return f()}});
 Object.assign(me,{fl:0});
 renderFloors();
 
@@ -2003,7 +2100,7 @@ const TS=[
 {t:'【名單】右側名單可以「定位」「跟隨」「揮手」「傳檔」給任何人，也能看到每個人的樓層與狀態。',at:[33,22],fl:0,hl:'#plist'},
 {t:'【編輯地圖】按「編輯地圖」進入編輯模式，所有人會同步看到修改。（導覽中的修改不會影響真實空間。）',at:[33,22],fl:0,hl:'#ed',ok:()=>editing},
 {t:'現在選一個圖塊或物件工具（如便條、影片、移除物件），點地圖放置。玩夠了再按一次「編輯地圖」離開。',at:[33,22],fl:0,hl:'#ed',ok:()=>!editing},
-{t:'【地圖工具】這裡有 15 種範本（辦公室、咖啡廳、教室、四層大樓、展覽館、博物館…）、匯出／匯入地圖與存到瀏覽器。',at:[33,22],fl:0,hl:'#mapTools'},
+{t:'【地圖工具】這裡有 17 種範本（辦公室、診所、咖啡廳、教室、四層大樓、展覽館、博物館…）、匯出／匯入地圖與存到瀏覽器。',at:[33,22],fl:0,hl:'#mapTools'},
 {t:'導覽完成！你已經體驗了移動、互動物件、遊戲、私人區、傳送門、多樓層、聊天、音視訊、社交與地圖編輯。\n按「完成」就回到原本的空間，之後想再逛一次，點工具列的「🧭 導覽」。',at:[33,22],fl:0}
 ];
 function npcPath(n,tx,ty){
@@ -2185,6 +2282,7 @@ window.tourOffer=function(){
   c.replaceWith(sl);sl.onchange=refreshSkins;
  }
 })();
+lpcOK=true;
 </script>
 </body>
 </html>
