@@ -197,6 +197,12 @@ body.meet #vids .v{width:auto;height:100%!important}
 .tourhl{outline:3px solid var(--acc)!important;outline-offset:3px;animation:tp 1s steps(2) infinite}
 @keyframes tp{50%{outline-color:#ff6ad5}}
 @media (max-height:480px) and (orientation:landscape){#vp{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}}
+#npcOpt{display:flex;flex-wrap:wrap;gap:6px;width:100%;align-items:flex-end;padding:6px;border:2px solid var(--acc);background:#120f20}
+#npcOpt[hidden]{display:none}
+#npcOpt label{display:grid;gap:2px;font-size:12px;color:var(--dim)}
+#npcOpt select{min-width:84px;width:auto}
+#npcOpt canvas{width:64px;height:64px;max-width:none;border:2px solid var(--line);background:#2b2f4a}
+#npcOpt .hint{flex:1 1 100%;margin:0}
 </style>
 </head>
 <body>
@@ -279,12 +285,13 @@ const setT=(x,y,v)=>{if(inb(x,y))map[idx(x,y)]=v};
 const fillT=(x0,y0,x1,y1,v)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)setT(x,y,v)};
 const frameT=(x0,y0,x1,y1,v)=>{for(let x=x0;x<=x1;x++){setT(x,y0,v);setT(x,y1,v)}for(let y=y0;y<=y1;y++){setT(x0,y,v);setT(x1,y,v)}};
 const roomT=(x0,y0,x1,y1,dx,dy)=>{frameT(x0,y0,x1,y1,1);fillT(x0+1,y0+1,x1-1,y1-1,4);setT(dx,dy,0)};
+const NPCW={'接待':2,'護理師':2,'林醫師':2,'陳醫師':2,'王醫師':2,'藥師':2,'檢驗師':2,'咖啡師':2,'老師':3,'主持人':3,'店員':3,'冰品攤販':2,'水果販':2,'點心販':2,'玩具販':2,'飾品販':2,'櫃台志工':2,'服務台志工':2,'大廳保全':3,'音控人員':2,'策展人':3};
 function npcPut(x,y,name,lines,k){
  const ST=[3,22,23,24];
  const stN=(a,b)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)if(inb(a+i,b+j)&&ST.includes(map[idx(a+i,b+j)]))return true;return false};
  const bad=(a,b)=>a<1||b<1||a>W-2||b>H-2||BLOCK.has(map[idx(a,b)])||stN(a,b)||objs.some(o=>o.x===a&&o.y===b);
  x=Math.floor(x);y=Math.floor(y);
- for(let r=0;r<=8;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bad(x+dx,y+dy)){addO('npc',x+dx,y+dy,lines,{n:name,k:(k||0)%8});return}
+ for(let r=0;r<=8;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(Math.max(Math.abs(dx),Math.abs(dy))===r&&!bad(x+dx,y+dy)){addO('npc',x+dx,y+dy,lines,{n:name,k:(k||0)%8,w:NPCW[name]!=null?NPCW[name]:4});return}
 }
 function addO(type,x,y,text,d,src){objs.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),type,x,y,text:String(text||'').slice(0,type==='slides'?2000:500),strokes:[],d:d||{},src:src||'',_al:true})}
 const TEMPLATES={
@@ -611,8 +618,8 @@ EMOTES.forEach(em=>{const b=document.createElement('button');b.textContent=em;b.
 /* ---------- editor ---------- */
 let editing=false,brush=1,painting=false;
 const grp={};
-function showGrp(k){for(const j in grp)grp[j].hidden=j!==k;$('tools').querySelectorAll('.tt').forEach(b=>b.classList.toggle('on',b.dataset.g===k))}
-function toolSel(v){$('tools').querySelectorAll('button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v))}
+function showGrp(k){const n=$('npcOpt');if(n)n.hidden=!(k==='o'&&brush==='o:npc');for(const j in grp)grp[j].hidden=j!==k;$('tools').querySelectorAll('.tt').forEach(b=>b.classList.toggle('on',b.dataset.g===k))}
+function toolSel(v){$('tools').querySelectorAll('button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===v));const n=$('npcOpt');if(n)n.hidden=v!=='o:npc'}
 {const bar=document.createElement('div');bar.className='ttabs';
  [['t','地形'],['d','裝飾物件'],['o','互動物件']].forEach(([k,n])=>{const g=document.createElement('div');g.className='tg';grp[k]=g;const tb=document.createElement('button');tb.textContent=n;tb.className='tt';tb.dataset.g=k;tb.onclick=()=>showGrp(k);bar.append(tb)});
  $('tools').append(bar,grp.t,grp.d,grp.o)}
@@ -764,6 +771,7 @@ function drawChar(p,self,c){
   const w=c.measureText(p.name).width+4;
   c.fillStyle='#000a';c.fillRect(px+8-w/2,py+17,w,8);
   c.fillStyle=self?'#ffcf4a':'#fff';c.fillText(p.name,px+8,py+23);
+  if(p.npc){c.font='6px DotGothic16,sans-serif';c.fillStyle='#000a';c.fillRect(px+1,py+25,14,7);c.fillStyle='#ffcf4a';c.fillText('NPC',px+8,py+31)}
  }
  const now=Date.now();
  if(p.name&&p.av&&p.av!=='act'){c.font='7px DotGothic16,sans-serif';const nw=c.measureText(p.name).width/2+5;c.fillStyle=p.av==='dnd'?'#ff5a5a':'#ffb347';c.fillRect(px+8-nw-2,py+19,3,3)}
@@ -966,16 +974,16 @@ applyPreset(0);
 /* ---------- objects, screen share, participants, files ---------- */
 const OTYPES=['note','link','board','dice','poll','timer','book','ttt','pick','video','bell','gomoku','rps','music','slides','img','audio','npc'];
 function cleanD(d){try{return d&&typeof d==='object'&&!Array.isArray(d)&&JSON.stringify(d).length<6000?JSON.parse(JSON.stringify(d)):{}}catch(e){return{}}}
-const objAt=(x,y)=>objs.find(o=>o.x===x&&o.y===y);
-const near=o=>Math.hypot(me.x-o.x,me.y-o.y)<=1.8;
-const nearestObj=()=>objs.filter(near).sort((a,b)=>Math.hypot(me.x-a.x,me.y-a.y)-Math.hypot(me.x-b.x,me.y-b.y))[0];
+const objAt=(x,y)=>objs.find(o=>{const q=posOf(o);return q[0]===x&&q[1]===y});
+const near=o=>{const q=posOf(o);return Math.hypot(me.x-q[0],me.y-q[1])<=1.8};
+const nearestObj=()=>objs.filter(near).sort((a,b)=>{const p=posOf(a),q=posOf(b);return Math.hypot(me.x-p[0],me.y-p[1])-Math.hypot(me.x-q[0],me.y-q[1])})[0];
 function cleanObjs(a){
  return(Array.isArray(a)?a:[]).filter(o=>o&&OTYPES.includes(o.type)&&Number.isInteger(o.x)&&Number.isInteger(o.y)&&inb(o.x,o.y)).slice(0,200)
   .map(o=>({id:String(o.id).slice(0,80),type:o.type,x:o.x,y:o.y,text:String(o.text||'').slice(0,o.type==='slides'?2000:500),
    strokes:o.type==='board'&&Array.isArray(o.strokes)?o.strokes.slice(0,4000).filter(s=>Array.isArray(s)&&s.length===5):[],src:cleanSrc(o.src,o.type),d:cleanD(o.d),_al:true}));
 }
 function drawObj(o){
- const px=o.x*T,py=o.y*T,c=ctx;
+ const pp=posOf(o),px=pp[0]*T,py=pp[1]*T,c=ctx;
  if(o.type==='note'){c.fillStyle='#ffe97a';c.fillRect(px+3,py+2,10,12);c.fillStyle='#c9a400';c.fillRect(px+5,py+5,6,1);c.fillRect(px+5,py+8,6,1);c.fillRect(px+5,py+11,4,1)}
  else if(o.type==='link'){c.fillStyle='#1d5fa8';c.fillRect(px+2,py+2,12,12);c.fillStyle='#4aa3f0';c.fillRect(px+3,py+3,10,10);c.fillStyle='#fff';c.fillRect(px+7,py+3,2,10);c.fillRect(px+3,py+7,10,2)}
  else if(o.type==='board'){c.fillStyle='#555';c.fillRect(px,py+1,T,13);c.fillStyle='#fff';c.fillRect(px+1,py+2,14,11);c.fillStyle='#d02020';c.fillRect(px+3,py+9,4,1);c.fillRect(px+6,py+6,4,1);c.fillStyle='#2050d0';c.fillRect(px+9,py+4,3,1)}
@@ -986,12 +994,13 @@ function drawObj(o){
 function objTool(v,x,y){
  if(!inb(x,y))return;const ex=objAt(x,y);
  if(v==='o:del'){if(ex){objs=objs.filter(o=>o!==ex);bc({t:'odel',id:ex.id})}return}
+ if(v==='o:npc'&&ex&&ex.type==='npc'){ex.d=Object.assign({},ex.d,{a:npcPanelCfg(),w:+$('nW').value});delete NPCRT[ex.id];bc({t:'odel',id:ex.id});bc({t:'oadd',o:ex});logMsg('<i>已把目前選的外觀與走動範圍套用到這位 NPC</i>');return}
  if(ex||BLOCK.has(map[idx(x,y)])||(me.x===x&&me.y===y))return;
  const type=v.slice(2);let text='';
  if(type==='note'){text=prompt('便條內容（最多 500 字）');if(text===null)return}
  if(type==='link'){text=prompt('請輸入網址（需以 http:// 或 https:// 開頭）');if(text===null)return;text=text.trim();if(!/^https?:\/\//i.test(text)){logMsg('<i>網址格式不正確</i>');return}}
  let d={},src='';
- if(type==='npc'){const nm=prompt('NPC 名字（最多 8 字）','護理師');if(nm===null)return;text=prompt('NPC 對話（多句用 || 分隔，最多 500 字）','歡迎光臨！||有什麼需要幫忙的嗎？');if(text===null)return;d={n:nm.trim().slice(0,8)||'NPC',k:rnd(8)}}
+ if(type==='npc'){const nm=prompt('NPC 名字（最多 8 字）','護理師');if(nm===null)return;text=prompt('NPC 對話（多句用 || 分隔，最多 500 字）','歡迎光臨！||有什麼需要幫忙的嗎？');if(text===null)return;d={n:nm.trim().slice(0,8)||'NPC',k:rnd(8),a:npcPanelCfg(),w:+($('nW')?$('nW').value:4)}}
  if(type==='poll'){text=prompt('投票問題');if(text===null)return;const op=prompt('選項（用逗號分隔，2 到 5 個）');if(op===null)return;const ol=op.split(/[,，]/).map(x=>x.trim().slice(0,30)).filter(Boolean).slice(0,5);if(ol.length<2){logMsg('<i>至少要有 2 個選項</i>');return}d={o:ol,v:{}}}
  if(type==='slides'){text=prompt('每頁內容用 || 分隔（最多 2000 字）');if(text===null)return}
  if(type==='video'){text=prompt('請輸入 YouTube 影片網址');if(text===null)return;text=text.trim();if(!ytId(text)){logMsg('<i>不是有效的 YouTube 網址</i>');return}}
@@ -1317,17 +1326,68 @@ var NPCSK=[
  {B:'female',skin:'taupe',hair:'messy1',hairC:'gray',top:'longsleeve',topC:'red',leg:'pants',legC:'black',foot:'shoes',footC:'black'},
  {B:'male',skin:'brown',hair:'curly_short',hairC:'gray',top:'longsleeve',topC:'red',leg:'pants',legC:'black',foot:'boots',footC:'black'}
 ];
-function npcImg(k){
+const NPC_STEP=600,NPC_CYC=80,NPC_WALK=56,NPCRT={};
+const hasK=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+function npcCfg(o){
+ const d=o.d||{},g=Object.assign({},NPCSK[(((d.k|0)%8)+8)%8]),a=d.a&&typeof d.a==='object'?d.a:{};
+ const pick=(k,ok)=>{if(typeof a[k]==='string'&&ok(a[k]))g[k]=a[k]};
+ pick('B',v=>v==='male'||v==='female');pick('skin',v=>hasK(PAL.body,v));
+ pick('hair',v=>OPT.hair.some(x=>x[0]===v));pick('hairC',v=>hasK(PAL.hair,v));
+ pick('top',v=>OPT.top.some(x=>x[0]===v));pick('topC',v=>hasK(PAL.cloth,v));
+ pick('leg',v=>OPT.leg.some(x=>x[0]===v));pick('legC',v=>hasK(PAL.cloth,v));
+ return g;
+}
+function npcImg(cfg){
  if(!lpcOK)return null;
- if(NPC_IMG[k])return NPC_IMG[k];
- if(!NPC_REQ[k]){NPC_REQ[k]=1;
-  lpcBuild(NPCSK[k]).then(c=>{const im=new Image();im.onload=()=>{NPC_IMG[k]=im};im.src=c.toDataURL('image/png')}).catch(()=>{});}
+ const key=JSON.stringify(cfg);
+ if(NPC_IMG[key])return NPC_IMG[key];
+ if(!NPC_REQ[key]){NPC_REQ[key]=1;
+  lpcBuild(cfg).then(c=>{const im=new Image();im.onload=()=>{NPC_IMG[key]=im};im.src=c.toDataURL('image/png')}).catch(()=>{});}
  return null;
 }
+const npcColor=cfg=>hasK(PAL.cloth,cfg.topC)?PAL.cloth[cfg.topC][4]:'#d02020';
+function posOf(o){return o.type==='npc'?npcCur(o):[o.x,o.y]}
+/* 走動：以時間為種子的決定性亂步，所有人看到的位置大致相同；每 80 步一輪，最後走回原位 */
+const hashStr=s=>{let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0};
+const mkRng=a=>()=>{a=(Math.imul(a,1664525)+1013904223)>>>0;return a/4294967296};
+function npcSim(o,cyc){
+ const w=o.d&&o.d.w!=null?+o.d.w:4,hx=o.x,hy=o.y,rg=reg[idx(hx,hy)],R=mkRng(hashStr(o.id+'|'+cyc));
+ const ok=(x,y)=>{if(!inb(x,y))return false;const t=map[idx(x,y)];
+  if(BLOCK.has(t)||STAIRT.has(t)||Math.abs(x-hx)+Math.abs(y-hy)>w||reg[idx(x,y)]!==rg)return false;
+  return !objs.some(q=>q!==o&&q.x===x&&q.y===y)};
+ const D=[[0,-1],[0,1],[-1,0],[1,0]],DD=[0,2,1,3],out=[[hx,hy,2,0]];
+ let x=hx,y=hy,d=2,lm=0,ret=null;
+ for(let i=1;i<NPC_CYC;i++){
+  if(w>0&&i<NPC_WALK){
+   if(R()>=.5){const ord=D.map((v,j)=>[R(),j]).sort((a,b)=>a[0]-b[0]);
+    for(const[,j]of ord){const nx=x+D[j][0],ny=y+D[j][1];if(ok(nx,ny)){x=nx;y=ny;d=DD[j];lm=i;break}}}
+  }else if(w>0&&(x!==hx||y!==hy)){
+   if(ret===null){
+    const prev=new Map([[y*W+x,-1]]),q=[y*W+x],g=hy*W+hx;
+    for(let h=0;h<q.length&&!prev.has(g);h++){const c=q[h],cx=c%W,cy=(c/W)|0;
+     for(const[dx,dy]of D){const nx=cx+dx,ny=cy+dy,k=ny*W+nx;if(!prev.has(k)&&ok(nx,ny)){prev.set(k,c);q.push(k)}}}
+    ret=[];if(prev.has(g))for(let c=g;c!==y*W+x;c=prev.get(c))ret.push([c%W,(c/W)|0]);ret.reverse();
+   }
+   if(ret.length){const n=ret.shift(),dx=n[0]-x,dy=n[1]-y;x=n[0];y=n[1];d=dy<0?0:dy>0?2:dx<0?1:3;lm=i}
+  }
+  out.push([x,y,d,lm]);
+ }
+ return out;
+}
+function npcCur(o){
+ const w=o.d&&o.d.w!=null?+o.d.w:4;
+ if(editing||TOUR||!(w>0))return[o.x,o.y,2,0];
+ const s=Math.floor(Date.now()/NPC_STEP),cyc=Math.floor(s/NPC_CYC),i=s%NPC_CYC;
+ let c=NPCRT[o.id];
+ if(!c||c.cyc!==cyc||c.x!==o.x||c.y!==o.y)c=NPCRT[o.id]={cyc,x:o.x,y:o.y,a:npcSim(o,cyc)};
+ const q=c.a[i];return[q[0],q[1],q[2],(cyc*NPC_CYC+q[3])*NPC_STEP];
+}
+setInterval(()=>{for(const k in NPCRT)delete NPCRT[k]},1500);
 function drawNpc(o){
- const k=((o.d&&o.d.k)|0)%8,im=npcImg(k),dx=me.x-o.x,dy=me.y-o.y;
- let d=2;if(Math.hypot(dx,dy)<=4)d=Math.abs(dx)>Math.abs(dy)?(dx<0?1:3):(dy<0?0:2);
- drawChar({x:o.x,y:o.y,name:String((o.d&&o.d.n)||'NPC').slice(0,8),color:'#d02020',sk:k,f:1,d,mt:0,lpc:!!im,img:im||null},false,ctx);
+ const cfg=npcCfg(o),im=npcImg(cfg),r=npcCur(o),dd=o.d||{};
+ let d=r[2];
+ if(Date.now()-r[3]>1200){const dx=me.x-r[0],dy=me.y-r[1];if(Math.hypot(dx,dy)<=3)d=Math.abs(dx)>Math.abs(dy)?(dx<0?1:3):(dy<0?0:2)}
+ drawChar({x:r[0],y:r[1],name:String(dd.n||'NPC').slice(0,8),npc:true,color:npcColor(cfg),sk:((dd.k|0)%8+8)%8,f:1,d,mt:r[3],lpc:!!im,img:im||null},false,ctx);
 }
 Object.assign(UIS,{
  npc(o){
@@ -1337,6 +1397,27 @@ Object.assign(UIS,{
   return{els:[out,mkBtn('下一句',()=>{i++;r()})],render:r};
  }
 });
+
+/* ---------- 編輯模式：NPC 外觀面板 ---------- */
+function npcPanelCfg(){const g=id=>$(id)?$(id).value:'';return{B:g('nB'),skin:g('nSkin'),hair:g('nHair'),hairC:g('nHairC'),top:g('nTop'),topC:g('nTopC'),leg:g('nLeg'),legC:g('nLegC')}}
+{
+ const box=document.createElement('div');box.id='npcOpt';box.hidden=true;
+ const pv=document.createElement('canvas');pv.id='nPrev';pv.width=pv.height=64;box.append(pv);
+ let tok=0;
+ const draw=async()=>{const my=++tok;try{const c=await lpcBuild(Object.assign({},NPCSK[0],npcPanelCfg()));if(my!==tok)return;const x=pv.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,64,64);x.drawImage(c,0,128,64,64,0,0,64,64)}catch(e){}};
+ const mk=(id,label,pairs,dv)=>{const l=document.createElement('label'),sl=document.createElement('select');sl.id=id;pairs.forEach(([v,n])=>sl.add(new Option(n,v)));sl.value=dv;sl.onchange=draw;l.append(label,sl);box.append(l)};
+ mk('nB','體型',[['male','男性'],['female','女性']],'male');
+ mk('nSkin','膚色',keysOf(PAL.body),'light');
+ mk('nHair','髮型',OPT.hair,'bob');
+ mk('nHairC','髮色',keysOf(PAL.hair),'dark_brown');
+ mk('nTop','上衣',OPT.top,'tshirt');
+ mk('nTopC','衣色',keysOf(PAL.cloth),'red');
+ mk('nLeg','褲子',OPT.leg,'pants');
+ mk('nLegC','褲色',keysOf(PAL.cloth),'black');
+ mk('nW','走動範圍',[['0','不動'],['2','小範圍'],['4','中範圍'],['6','大範圍']],'4');
+ const h=document.createElement('p');h.className='hint';h.textContent='選好外觀後，在地圖上點空格放置新 NPC（會詢問名字與對話）；點已存在的 NPC 則套用目前的外觀與走動範圍。編輯模式中 NPC 會停在原位，方便點選。';
+ box.append(h);$('tools').append(box);draw();
+}
 /* screen share: only people in range (or the same private room) receive it */
 function showScreen(call){
  const d=document.createElement('div');d.className='scr';
