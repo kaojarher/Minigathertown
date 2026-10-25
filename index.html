@@ -462,9 +462,16 @@ function P(id){
  const box=document.createElement('div');box.className='v';box.style.display='none';
  const vid=document.createElement('video');vid.autoplay=true;vid.playsInline=true;
  const lb=document.createElement('span');box.append(vid,lb);$('vids').append(box);
- return peers[id]={id,x:0,y:0,name:'訪客',color:'#888',em:'',emT:0,chat:'',chatT:0,box,vid,lb,conn:null,has:false};
+ return peers[id]={id,x:0,y:0,name:'訪客',color:'#888',em:'',emT:0,chat:'',chatT:0,box,vid,lb,conn:null,has:false,seen:Date.now()};
 }
-function dropPeer(id){const p=peers[id];if(!p)return;p.box.remove();delete peers[id];logMsg('<i>'+esc(p.name)+' 離開了</i>')}
+function dropPeer(id){
+ const p=peers[id];if(!p)return;
+ try{p.vid.srcObject=null}catch(e){}p.box.remove();delete peers[id];
+ activeCalls.forEach(c=>{if(c.peer===id){try{c.close()}catch(e){}activeCalls.delete(c)}});
+ const sc=shareCalls[id];if(sc){try{sc.close()}catch(e){}delete shareCalls[id]}
+ if(follow&&(follow===id||follow.id===id))follow=null;
+ logMsg('<i>'+esc(p.name)+' 離開了</i>');
+}
 
 /* ---------- proximity ---------- */
 const regAt=p=>reg[idx(p.x,p.y)];
@@ -496,8 +503,13 @@ function setupConn(c,outgoing){
   if(isHost&&!outgoing){c.send({t:'floors',f:packFloors()});c.send({t:'peers',ids:Object.keys(peers).filter(i=>i!==c.peer)})}
   if(outgoing)callPeer(c.peer);
  });
- c.on('data',m=>onData(c.peer,m));
- c.on('close',()=>dropPeer(c.peer));
+ c.on('data',m=>{
+  let q=peers[c.peer];
+  if(!q){if(m.t==='bye')return;q=P(c.peer);q.conn=c;if(c.open){c.send(hello());c.send({t:'hq'})}}
+  else if(!q.conn)q.conn=c;
+  onData(c.peer,m);
+ });
+ c.on('close',()=>{const q=peers[c.peer];if(q&&(!q.conn||q.conn===c))dropPeer(c.peer)});
  c.on('error',()=>{});
 }
 function callPeer(id){const call=peer.call(id,stream);attachCall(call)}
@@ -509,8 +521,10 @@ function attachCall(call){
 function onData(id,m){
  if(TOUR&&(FLMSG.has(m.t)||/^f(loors|add|ren|del)$/.test(m.t))){TOUR.q.push([id,m]);return}
  if(FLMSG.has(m.t)&&floors[m.fl|0]&&(m.fl|0)!==curFl)return withFloor(m.fl|0,()=>onData(id,m));
- const p=P(id);
+ if(m.t==='bye'){dropPeer(id);return}
+ const p=P(id);p.seen=Date.now();
  switch(m.t){
+  case'hq':if(p.conn&&p.conn.open)p.conn.send(hello());break;
   case'hi':p.fl=m.fl|0;p.av=cleanAv(m.av);p.stx=cleanStx(m.stx);p.hand=!!m.hand;p.spot=!!m.spot;p.rec=!!m.rec;p.name=m.name;p.color=m.color;p.x=m.x;p.y=m.y;p.f=m.f<0?-1:1;p.sk=(m.sk>=0&&m.sk<SKINS.length)?m.sk|0:0;
    if(typeof m.url==='string'&&m.url.startsWith('data:image/png;base64,')&&m.url.length<250000){p.img=new Image();p.img.src=m.url;p.lpc=!!m.lpc;p.d=(m.d>=0&&m.d<=3)?m.d|0:2}
    logMsg('<i>'+esc(m.name)+' 加入了</i>');break;
@@ -548,6 +562,7 @@ function boot(wantHost){
   updateAV();
  });
  peer.on('connection',c=>setupConn(c,false));
+ peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
  peer.on('call',call=>{
   if(call.metadata&&call.metadata.kind==='screen'){call.answer();showScreen(call)}
   else{call.answer(stream);attachCall(call)}
@@ -558,6 +573,17 @@ function boot(wantHost){
   else status('連線錯誤：'+e.type);
  });
 }
+/* 在線狀態：心跳 + 離開通知，避免斷線沒有觸發 close 時角色殘留 */
+setInterval(()=>{
+ const now=Date.now();
+ for(const p of Object.values(peers)){
+  if(p.conn&&p.conn.open){try{p.conn.send({t:'pg'})}catch(e){}}
+  if(now-p.seen>30000)dropPeer(p.id);
+ }
+},3000);
+function sayBye(){try{Object.values(peers).forEach(p=>p.conn&&p.conn.open&&p.conn.send({t:'bye'}));if(peer)peer.destroy()}catch(e){}}
+addEventListener('pagehide',sayBye);addEventListener('beforeunload',sayBye);
+addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
 async function getMedia(){
  /* 加入時只取麥克風；攝影機要按「鏡頭」才會啟用（省電） */
  try{return await navigator.mediaDevices.getUserMedia({audio:true})}
