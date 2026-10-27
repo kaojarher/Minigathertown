@@ -271,7 +271,7 @@ body.meet #vids .v{width:auto;height:100%!important}
    <button type="button" id="rec" title="錄下地圖畫面與你聽到的聲音，只存在你的裝置">錄影</button>
   </div>
   <div id="fbar"><span class="lbl">樓層</span><span id="fbtns"></span><span class="fedit"><button type="button" id="fadd">＋新增樓層</button><button type="button" id="fren">改名</button><button type="button" id="fdel">刪除最頂層</button></span></div>
-  <p class="hint">方向鍵或 WASD 移動，也可以直接點地圖走過去（編輯模式下點擊是放置圖塊）。靠近各種物件按 X 互動。🤖 BOT 是 LLM 驅動的角色：按工具列的「BOT」生成與設定，靠近 BOT 按 X 對話，或在聊天框輸入 @名稱、@群組、@全體 呼叫。靠近 5 格內可互相聽見與看見。紫色區域是私人區，區內只有彼此聽得見。踩上傳送門會移到下一個傳送門。上樓梯、下樓梯與電梯可切換樓層，只有同一層的人互相看得到、聽得到（Spotlight 例外，全館廣播）。</p>
+  <p class="hint">方向鍵或 WASD 移動，也可以直接點地圖走過去（編輯模式下點擊是放置圖塊）。靠近各種物件按 X 互動。🤖 BOT 是 LLM 驅動的角色：按工具列的「BOT」生成與設定，靠近 BOT 按 X 對話；走近 BOT 後直接在聊天框說話即可，或用 @名稱、@群組、@全體 指定。靠近 5 格內可互相聽見與看見。紫色區域是私人區，區內只有彼此聽得見。踩上傳送門會移到下一個傳送門。上樓梯、下樓梯與電梯可切換樓層，只有同一層的人互相看得到、聽得到（Spotlight 例外，全館廣播）。</p>
  </div>
  <div id="side">
   <div id="vids"></div>
@@ -1617,8 +1617,21 @@ function targetsOf(s){
  return hit.slice(0,6);
 }
 /* 聊天框輸入 @名稱／@群組／@全體 時觸發 */
-window.botChatHook=s=>{if(TOUR||s.indexOf('@')<0)return;note(me.name,s,true);const ts=targetsOf(s);if(ts.length)run(ts.map(o=>[o,DIRECT]))};
-window.botNoteChat=(name,s)=>{if(String(s).indexOf('@')>=0)note(name,s,true)};
+window.botChatHook=s=>{
+ if(TOUR)return;
+ const bots=botsHere();if(!bots.length)return;
+ let ts=targetsOf(s);                       /* 有 @ 就只叫被點名的 */
+ if(!ts.length){                            /* 沒有 @：附近（或同一私人區）的 BOT 依序回應 */
+  const rg=reg[idx(me.x,me.y)];
+  ts=bots.filter(o=>{const q=posOf(o);return rg?reg[idx(q[0],q[1])]===rg:Math.hypot(me.x-q[0],me.y-q[1])<=Math.max(R,5)});
+  ts.sort((a,b)=>((b.d||{}).r==='主管')-((a.d||{}).r==='主管'));
+  ts=ts.slice(0,6);
+  if(!ts.length){note(me.name,s,true);logMsg('<i>附近沒有 BOT 聽得到你：請走近 BOT，或用 @名稱、@群組、@全體 呼叫</i>');return}
+ }
+ note(me.name,s,true);
+ run(ts.map(o=>[o,DIRECT]));
+};
+window.botNoteChat=(name,s)=>{note(name,s,true)};   /* 別人的發言也記入 BOT 的上下文 */
 
 /* ---------- 網路同步（收到別人觸發的 BOT 事件） ---------- */
 const botById=(id,fl)=>((fl|0)===curFl?objs:((floors[fl|0]&&floors[fl|0].o)||[])).find(q=>q.id===id&&q.type==='bot');
